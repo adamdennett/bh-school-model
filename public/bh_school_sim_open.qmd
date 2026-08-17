@@ -1346,7 +1346,7 @@ maths, science and languages department whether its year group is 90 or 240.
 ## What size of school does the demand support?
 
 ```{r pan-envelope}
-#| fig-cap: "How often Longhill recruits to each admission number, across the full parameter sweep."
+#| fig-cap: "How often Longhill recruits to each admission number, across the full parameter sweep. Note this is the share of model RUNS reaching 90% of PAN, not a fill rate - see the caution below."
 #| fig-height: 4
 
 env$q1 %>%
@@ -1374,7 +1374,41 @@ has to accept. Across the **entire** parameter sweep:
 - At 120, in `r round(env$q1[["PAN 120"]][env$q1$entry_year == 2035])`%.
 
 **Neither 240 nor the 210 now in force is sustainable under most defensible
-parameterisations.** A PAN of 120 to 150 is.
+parameterisations.**
+
+::: {.callout-caution}
+## This result differs from the calibrated model — and the difference changes the recommendation
+
+**Read the chart above carefully: it does not show fill rates.** Each cell is
+the share of model *runs* in which Longhill reaches 90% of its number — a
+measure of how robust a conclusion is to the unknown parameters, not of how
+full the school gets. The equivalent chart in the calibrated analysis shows
+actual fill rate, and the two are easy to confuse because they are both
+percentages on a red-to-green grid.
+
+Set side by side for 2035, the difference is not subtle:
+
+| PAN | share of runs reaching 90% (above) | modelled fill rate, calibrated |
+|---|---|---|
+| 120 | 97% | **72%** |
+| 150 | 90% | **57%** |
+| 180 | 80% | **48%** |
+| 240 | 50% | **36%** |
+
+**The two disagree on the policy conclusion, not merely on the numbers.** This
+section would naturally be read as saying a PAN of 120 to 150 is sustainable.
+On the calibrated model it is not: by 2035 a PAN of 150 fills 57%, and even
+120 — already a small school by English standards — reaches only 72%. There is
+no admission number at which the calibrated model has Longhill comfortably
+full at the end of the window on its current site.
+
+Both the metric and the over-prediction described in @sec-envelope push in the
+same direction here, which is why the gap is so wide. **What survives is the
+ranking and the exclusion at the top**: 240 and 210 are not viable on either
+analysis, and smaller is better. What does not survive is the implication that
+120 to 150 is comfortable. On the records it is the least bad option, not a
+solution.
+:::
 
 # Deprivation and the catchment system {#sec-deprivation}
 
