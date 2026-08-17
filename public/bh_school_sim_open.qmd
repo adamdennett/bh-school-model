@@ -1012,13 +1012,30 @@ a judgement and tested, rather than carried through as a parameter.
 The comparison above is worth doing for all six catchments rather than Longhill alone, because it shows how far Longhill's treatment stands apart. This replicates the cohort-ageing projection from [*Brighton and Hove allocations*](https://adamdennett.github.io/BH_Schools_2/brighton_and_hove_allocations.html#our-own-projection-cohort-aging-from-primary-allocations), which ages each catchment's Reception offers forward seven years to the Year 7 cohort they become.
 
 ```{r catch-proj}
-cp <- rec$by_catchment %>%
+# Our internal catchment keys and the council's published labels name the
+# same places. They must be harmonised before any join, or the two paired
+# catchments silently drop out of every comparison below.
+CATCH_LABEL <- c(PACA = "PACA",
+                 Hove_Blatch = "Hove Park / Blatchington Mill",
+                 Patcham = "Patcham",
+                 DS_Varndean = "Varndean / Dorothy Stringer",
+                 BACA = "BACA",
+                 Longhill = "Longhill",
+                 Peacehaven = "Peacehaven",
+                 `Religious schools` = "Religious schools")
+relabel <- function(x) dplyr::coalesce(unname(CATCH_LABEL[x]), x)
+
+ours_lab <- rec$by_catchment %>% mutate(catchment = relabel(catchment))
+council_lab <- rec$council %>%
+  transmute(catchment = relabel(CatchmentGroup), entry_year, council)
+
+cp <- ours_lab %>%
   filter(entry_year %in% c(2026, 2029, 2032)) %>%
   select(catchment, entry_year, ours = projected) %>%
-  left_join(rec$council %>%
-              transmute(catchment = CatchmentGroup, entry_year, council),
-            by = c("catchment", "entry_year")) %>%
+  left_join(council_lab, by = c("catchment", "entry_year")) %>%
   filter(!is.na(council))
+
+stopifnot(dplyr::n_distinct(cp$catchment) == 6)
 
 cp %>%
   mutate(txt = sprintf("%d / %d", round(ours), round(council))) %>%
@@ -1044,17 +1061,27 @@ pj <- bind_rows(
   rec$council %>%
     transmute(catchment = CatchmentGroup, entry_year, n = council, src = LV[3])) %>%
   filter(!is.na(n)) %>%
-  mutate(src = factor(src, levels = LV))
+  mutate(catchment = relabel(catchment), src = factor(src, levels = LV))
 
 # Join the observed series to the projection so the line is continuous
 # rather than breaking at the handover year.
 bridge <- rec$observed_by_catchment %>%
   filter(entry_year == max(entry_year)) %>%
-  transmute(catchment, entry_year, n = y7_offers, src = factor(LV[2], levels = LV))
+  transmute(catchment = relabel(catchment), entry_year, n = y7_offers,
+            src = factor(LV[2], levels = LV))
+
+# Free y-scales otherwise crop the taller panels awkwardly. These are
+# headroom values, not data.
+ylim_df <- tibble(
+  catchment = c("Hove Park / Blatchington Mill", "Varndean / Dorothy Stringer",
+                "Religious schools"),
+  n = c(625, 700, 600), entry_year = 2026,
+  src = factor(LV[1], levels = LV))
 
 bind_rows(pj, bridge) %>%
   ggplot(aes(entry_year, n, colour = src, linetype = src)) +
   geom_line(linewidth = 0.9) + geom_point(size = 1.5) +
+  geom_blank(data = ylim_df) +
   facet_wrap(~ catchment, ncol = 3, scales = "free_y") +
   scale_colour_manual(values = setNames(c("grey30", "#1b9e77", "#d95f02"), LV)) +
   scale_linetype_manual(values = setNames(c("solid", "solid", "dashed"), LV)) +
@@ -1071,11 +1098,9 @@ The pattern is easier to see as the gap itself — the council's forecast expres
 ```{r catch-proj-gap}
 #| fig-cap: "The council's forecast as a share of the cohort implied by each catchment's own conversion rate. Above 100% means the council is forecasting more children than the primary cohorts support."
 
-gap <- rec$by_catchment %>%
+gap <- ours_lab %>%
   select(catchment, entry_year, ours = projected) %>%
-  inner_join(rec$council %>%
-               transmute(catchment = CatchmentGroup, entry_year, council),
-             by = c("catchment", "entry_year")) %>%
+  inner_join(council_lab, by = c("catchment", "entry_year")) %>%
   mutate(ratio = 100 * council / ours,
          lh = catchment == "Longhill")
 
