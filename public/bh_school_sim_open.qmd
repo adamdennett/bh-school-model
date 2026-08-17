@@ -1559,6 +1559,310 @@ analysis, and smaller is better. What does not survive is the implication that
 solution.
 :::
 
+# What the 2024 redraw did {#sec-redraw}
+
+Before asking what a new catchment could do, it is worth pricing the one the
+city has already adopted. Every run in the sweep was repeated on both maps —
+same site, same decay, same attractiveness, same catchment strength, same
+entry year — so the redraw can be isolated.
+
+```{r redraw-pop}
+inp$regime_pop %>%
+  mutate(children = round(children)) %>%
+  pivot_wider(names_from = regime, values_from = children) %>%
+  transmute(Catchment = catchment,
+            `Pre-2024` = pre2024, `Option Z` = optionZ,
+            Change = optionZ - pre2024) %>%
+  arrange(Change) %>%
+  tbl(caption = "Children entering Year 7 in 2026, by catchment, under each map")
+```
+
+The headcount barely moves: Longhill's catchment gains about
+`r round(with(inp$regime_pop, children[regime=="optionZ" & catchment=="Longhill"] - children[regime=="pre2024" & catchment=="Longhill"]))`
+children. What changes is who they are. The zones moving *in* are no closer to
+Longhill than those moving *out* — both average about 34 minutes away — but
+they are markedly closer to the alternatives:
+
+```{r redraw-access}
+mv <- inp$zones %>%
+  filter(catch_pre2024 != catch_optionZ,
+         catch_pre2024 == "Longhill" | catch_optionZ == "Longhill") %>%
+  mutate(dir = if_else(catch_optionZ == "Longhill",
+                       "Moves in (Kemptown)", "Moves out (Whitehawk & Marina)"))
+
+inp$costs_now %>%
+  filter(name %in% c(LH, "Dorothy Stringer School", "Varndean School")) %>%
+  inner_join(mv %>% select(zone, dir, Oi), by = "zone") %>%
+  group_by(dir, name) %>%
+  summarise(mins = round(weighted.mean(cij, Oi), 1), .groups = "drop") %>%
+  pivot_wider(names_from = dir, values_from = mins) %>%
+  rename(School = name) %>%
+  tbl(caption = "Population-weighted journey time from the areas the redraw moves")
+```
+
+A child moved into Longhill's catchment has Stringer and Varndean roughly
+eight and seven minutes closer to hand than a child moved out of it. The model
+can see that, and prices the redraw accordingly:
+
+```{r redraw-effect}
+env$q6 %>%
+  filter(site == "now") %>%
+  group_by(entry_year) %>%
+  summarise(Median = round(median(shift), 1),
+            Lowest = round(min(shift), 1),
+            Highest = round(max(shift), 1),
+            `% of runs worse` = round(100 * mean(shift < 0)),
+            .groups = "drop") %>%
+  rename(`Entry year` = entry_year) %>%
+  tbl(caption = "Change in Longhill's modelled recruitment under option Z, against the pre-2024 map")
+```
+
+On open data the effect is small and its sign depends on how much weight
+catchment priority is given: with no catchment effect at all it is zero by
+construction, and at the strongest priority tested it is mildly positive,
+because the incoming children gain a priority they did not have. The honest
+summary is that **the open model cannot resolve this question** — the shifts
+are a fraction of a child either way, well inside the noise of everything else
+being swept.
+
+That is itself worth reporting. The redraw is exactly the kind of change whose
+effect depends on how families actually behave, not on how far apart things
+are, and behaviour is the thing published statistics do not record. An
+origin–destination matrix of preferences by area would settle it immediately.
+
+# Shrink, move, or redraw?
+
+::: {.callout-caution}
+## This result differs from the calibrated model
+
+The fill rates below inherit the over-prediction described under the chart in this section: because the open model recruits roughly twice as many children to Longhill as the records support, **every fill rate here is too high**, and the PAN at which the school appears viable is correspondingly too large.
+
+**How much too high is the open question.** If the over-prediction runs at the factor the envelope's own lower bound implies, configuration A would land somewhere near 40% by 2035 rather than anything approaching viable, and only the smallest configuration — Elm Grove at PAN 120 with redrawn catchments — would hold above 80% across the window. On the figures printed here several configurations look survivable at PAN 150; on that reading they would not be.
+
+What survives either reading is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order with confidence; treat the levels as an upper bound.
+:::
+
+```{r cfg-table}
+os$lh_band %>%
+  filter(entry_year %in% c(2026, 2030, 2035)) %>%
+  mutate(txt = sprintf("%.0f (%.0f–%.0f)", 100*pmin(central,1),
+                       100*pmin(lo,1), 100*pmin(hi,1))) %>%
+  select(config, entry_year, txt) %>%
+  pivot_wider(names_from = entry_year, values_from = txt) %>%
+  rename(Configuration = config) %>%
+  tbl(caption = "Longhill fill rate (%) — central specification, with the range across the parameter band in brackets")
+```
+
+```{r cfg-plot}
+#| fig-cap: "Longhill's natural recruitment under each configuration at the central specification. Dotted lines are whole forms of entry."
+
+os$natural %>%
+  mutate(lab = str_remove(config, "^[A-G]\\. ")) %>%
+  ggplot(aes(entry_year, natural, colour = lab, group = lab)) +
+  geom_hline(yintercept = c(90, 120, 150, 180), linetype = "dotted", colour = "grey60") +
+  annotate("text", x = 2035.3, y = c(90, 120, 150, 180),
+           label = c("3 FE", "4 FE", "5 FE", "6 FE"), hjust = 0, size = 3, colour = "grey45") +
+  geom_line(linewidth = 0.9) + geom_point(size = 2.2) +
+  scale_x_continuous(breaks = os$years, limits = c(2026, 2038)) +
+  scale_colour_brewer(palette = "Set2") +
+  expand_limits(y = 0) +
+  labs(title = "Longhill's natural size under each option",
+       subtitle = "Central specification; recruitment with the school's own admission number unbinding",
+       x = "Year 7 entry year", y = "Children recruited", colour = NULL) +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 4))
+```
+
+::: {.callout-caution}
+## This chart is the most optimistic thing in the report, and it is wrong in a known direction
+
+**Read the level on this chart with great care.** It is where this model is most likely to be wrong, and the direction of the error is knowable even if its size is not.
+
+The chart puts Longhill's 2035 recruitment at **`r cnat("A", 2035)`** children where it stands today. The bottom of the sweep in @sec-envelope puts the same figure near **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`** — less than half. That is the range a calibrated model would resolve, and there is good reason to think it would land towards the lower end.
+
+**Why.** The open model can see how reachable Longhill is but has nothing that measures how strongly families *avoid* it. Published data records where children were offered places, not what they wanted. Once routed journey times let the model see that Longhill is genuinely accessible, it sends children there in numbers the city's actual admissions do not bear out — the validation below shows exactly that over-prediction.
+
+**What that would mean.** If the true figures sit near the lower bound, every curve here moves down by something approaching a factor of two, and the conclusion hardens considerably: no configuration would have Longhill recruiting above four forms of entry after 2030, and the current arrangement would fall below three. The *ordering* would be largely preserved — relocation and redrawing still help, in the same rank order — so the comparative reading survives either way. **The level does not.**
+
+Treat the shape of this chart as informative and the height of it as an upper bound.
+:::
+
+::: {.callout-important}
+## Relocation helps — a correction to an earlier version
+
+At the central specification the school recruits `r cnat("A", 2035)` children
+in 2035 where it is, against `r cnat("C", 2035)` at Elm Grove. Across the full
+sweep in @sec-envelope, relocation has a median effect of
+**+`r round(median(env$q3$gain[env$q3$entry_year == 2035]), 1)` children by
+2035**, positive in
+`r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs.
+
+An earlier version of this document reported the opposite — that no case for
+relocation was visible in open data. **That was wrong, and the cause was the
+travel matrix.** There were no routed journey times for the Elm Grove site, so
+it was given the average accessibility of a Brighton secondary. Rebuilding the
+`r5r` network over a merged East and West Sussex extract, and changing nothing
+else, moves the relocation effect from about −4 children to about +58 in 2026.
+The site sits on a main corridor and is markedly better connected than the
+average the approximation assumed.
+:::
+
+What other schools reducing their admission numbers would do is examined in @sec-pan-open.
+
+**Shrinking still works on its own.** Configuration B — a PAN of 150 at
+Ovingdean, no move, no redraw — fills in 2026 and holds at `r cfill("B", 2035)`
+in 2035. Configuration G, a PAN of 120 at Elm Grove with redrawn catchments,
+holds at `r cfill("G", 2035)`.
+
+::: {.callout-warning}
+## Read the open relocation figures with caution
+
+Routed costs improved the model's realism but made its fit to published offers
+*worse*, not better: R² falls to
+`r sprintf("%.2f", CalcRSquared(os$val$observed, os$val$modelled))`, and it now
+over-predicts Longhill by
+`r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])`
+children against
+`r round(os$val$observed[os$val$name == LH])` actually offered.
+
+The reason is visible in the arithmetic. Once the model can see how reachable
+Longhill really is, it sends far more children there than the city does. What
+it lacks is any measure of how strongly families *avoid* the school —
+something only individual preference data supplies. The open model therefore
+**overstates Longhill's viability**, and the relocation gain above is an upper
+bound rather than an estimate.
+
+The direction of the correction is solid; the magnitude is not.
+:::
+
+## Designing catchments rather than guessing them {#sec-design-open}
+
+The configurations above take the catchment map as given. A companion exercise, `public/R/08_catchment_design_open.R`, designs it instead, which matters because Peacehaven Community School joins the city's arrangements and its catchment has to be drawn from scratch rather than inherited.
+
+Assigning each neighbourhood to its nearest school gives a Voronoi diagram, which ignores capacity — the popular central schools would be handed far more children than they have places for. Adding the capacity constraint turns this into optimal transport. Give each catchment a scalar *price*, assign every neighbourhood to whichever minimises **journey time + price**, then raise the price of oversubscribed catchments and lower it for undersubscribed ones until each holds the right number of children. The result is an additively weighted Voronoi diagram, or *power diagram*: it minimises total travel time subject to every catchment being the right size, and its regions are contiguous, so the output is a map rather than a scatter of fragments. Every input is published — LSOA child counts, admission numbers from the adjudicator's determination, and the same routed journey times used throughout this document.
+
+Three constraints turned out to be necessary before the output was usable, and they are worth stating because each corrects a failure that looked plausible on the page.
+
+**Targets are capped at the schools' admission numbers.** Scaling targets proportional to PAN and then to the children available can hand a catchment more children than its school can admit. Patcham was the worst case, targeted at 275 against a PAN of 225. A catchment can now come out smaller than its proportional share, which is the honest answer when the school is small.
+
+**Each neighbourhood may only be assigned to one of its three nearest catchments.** Without this the price-adjustment step occasionally satisfies a capacity constraint by reaching across the city.
+
+**The repair step must refuse impossible moves.** After the price adjustment, small detached fragments are absorbed into a neighbouring catchment and boundary neighbourhoods are traded until capacity is restored. Both phases picked the cheapest candidate using functions that *rank* infinities rather than rejecting them — so when the three-nearest rule ruled out every adjacent catchment, a move was still made, to the least impossible option. The symptom was two Peacehaven neighbourhoods sitting in the Dorothy Stringer and Varndean catchment 9.6 km away, with two central neighbourhoods exported to Peacehaven in exchange. The design stage had placed all four correctly; the repair undid it. With the fix, the expansion area is whole within the Peacehaven catchment and that catchment reaches into the city only along the Saltdean fringe.
+
+### Relocation severs Longhill from its eastern hinterland
+
+The designed maps reproduce the finding above — redrawing is worth roughly the same whether or not the school shrinks first, adding of the order of eight points to the 2030 fill rate — but they add one result that the fixed-map configurations cannot show.
+
+```{r cd-open-hinterland}
+#| include: false
+ocd <- readRDS(file.path(PUBLIC_OUT, "catchment_design_open.rds"))
+n_sev <- nrow(ocd$hinterland); c_sev <- round(sum(ocd$hinterland$Oi, na.rm = TRUE))
+n_gain <- nrow(ocd$gained);    c_gain <- round(sum(ocd$gained$Oi, na.rm = TRUE))
+t_now <- ocd$east_times$`Longhill High School`[ocd$east_times$site == "Ovingdean"]
+t_elm <- ocd$east_times$`Longhill High School`[ocd$east_times$site == "Elm Grove"]
+```
+
+Hold the admission number at the adjudicator's 210 and design the catchment around each candidate site in turn. **`r n_sev` neighbourhoods, holding `r c_sev` children, belong to Longhill at Ovingdean but not at Elm Grove.** For those places the journey to Longhill goes from an average of `r sprintf("%.0f", t_now)` minutes to `r sprintf("%.0f", t_elm)` — while Dorothy Stringer and Varndean stay where they are, at around 68 and 60 minutes. They are not moving towards a better school; the school is moving away from them, and the designer reassigns them because it has to.
+
+Against that, relocation gains Longhill `r n_gain` neighbourhoods and `r c_gain` children nearer the city centre. So the move is a genuine trade rather than a straight loss — but it is a trade, and it is one the fill rates do not show.
+
+This is a cost of relocation that the fill rates hide, since they are dominated by the central demand the move buys. A viable school serving the east of the city with its natural catchment intact argues for the Ovingdean site and a lower admission number; the highest fill rate argues for Elm Grove and a smaller school still. Those point in opposite directions, and choosing between them is a judgement about what the school is for.
+
+### One catchment per school {#sec-single-open}
+
+Brighton pairs two of its catchments — Hove Park with Blatchington Mill, Dorothy Stringer with Varndean. Splitting them gives each school its own geography. It reassigns every neighbourhood in the city rather than the sixty or so a paired redraw moves, because separating two schools that share a catchment forces a boundary through the middle of an existing one and the price adjustment propagates that outward. So it is a thought experiment, not a proposal — but it answers two questions the paired designs cannot.
+
+**It does not shorten the journey to school.**
+
+```{r cd-open-travel}
+ocd$travel_cmp %>%
+  transmute(Design = design, Specification = spec, `Longhill site` = site,
+            Catchments = catchments,
+            `Mean journey (min)` = round(mean_minutes, 2),
+            `vs current map` = sprintf("%+.2f", vs_current)) %>%
+  tbl(caption = sprintf("Mean journey to the catchment school under each design. The current map gives %.2f minutes.", ocd$baseline_travel))
+```
+
+No single-school design beats the best paired one. A paired catchment lets the design send a neighbourhood to whichever of two schools is nearer; splitting the pair removes that freedom, and the journey gets slightly longer. But the honest headline is the size of the spread: **every design in the table sits within about a minute of every other, on a mean journey of `r round(ocd$baseline_travel)` minutes.** Catchment geometry is not where travel-time gains are. Where a school *is* matters; which catchment a child is put in barely does.
+
+**What it would do to deprivation is more interesting**, because this is what the policy debate turns on.
+
+```{r cd-open-dep}
+ocd$spec_gorard %>%
+  transmute(Specification = spec, Catchments = catchments,
+            `Gorard index` = round(gorard, 3),
+            `Most − least deprived (pp)` = round(range_pp, 1)) %>%
+  tbl(caption = "Segregation of where children live, by catchment specification. Higher Gorard means disadvantage is spread more unevenly across catchments.")
+```
+
+Two measures move in opposite directions, and both readings are correct.
+
+The **gap between the most and least deprived catchment narrows sharply** — from `r round(ocd$spec_gorard$range_pp[ocd$spec_gorard$spec == "Current map"])` percentage points under the current map to `r round(ocd$spec_gorard$range_pp[ocd$spec_gorard$spec == "One per school, Ovingdean"])` with one catchment per school. Smaller catchments cannot span the whole social gradient, so the extremes come in.
+
+But the **Gorard index rises**, from `r sprintf("%.3f", ocd$spec_gorard$gorard[ocd$spec_gorard$spec == "Current map"])` to `r sprintf("%.3f", ocd$spec_gorard$gorard[ocd$spec_gorard$spec == "One per school, Ovingdean"])`. More catchments means more of them can be socially distinctive, and the index measures unevenness across all of them rather than the range between the extremes. If the worry is that some children live in a catchment unlike the rest of the city, splitting helps. If the worry is the overall evenness of the spread, it does not.
+
+```{r cd-open-pairs}
+ocd$pairs_split %>%
+  transmute(School, Children = children, `% deprived` = pct_deprived) %>%
+  tbl(caption = "What splitting the two paired catchments would give each school — children living in the catchment, not modelled intakes")
+```
+
+Each pair splits into a less deprived and a more deprived half, Hove Park taking the less deprived side of its pair and Varndean the less deprived side of its own. That is worth setting against what @sec-deprivation shows about intakes: the sorting that happens *inside* a shared catchment does not follow the geography underneath it, and pairing masks a social boundary rather than creating one.
+
+### The fairness argument for splitting them {#sec-dual-fairness-open}
+
+Public argument during the consultation held that having some dual and some single-school catchments is unfair, because families in a dual catchment get a *choice* of two schools while families in a single-school catchment get none. Two things are worth saying about it.
+
+**In an oversubscribed catchment there is no choice, only chance.** Naming a school does not secure it; where places are short the tiebreaker decides, and the tiebreaker is random. A dual catchment does not confer two choices. It confers one preference and a probability. How often that bites can only be measured on individual preference and offer records, which are not published — work on those records finds it bites hard at one school in the pair and essentially not at all at the others.
+
+**The pairing does redistributive work that splitting would undo.** This is the part the argument misses. A shared catchment mixes two populations the geography would otherwise separate, and the tables above show the direction: each pair splits into a more and a less deprived half, so the pair is holding together a social range that single-school catchments would divide.
+
+That inverts the fairness case. Removing dual catchments would not remove the element of chance — that comes from oversubscription, not from pairing. It would remove the mixing and leave the chance where it was.
+
+::: {.callout-important}
+## The west of the city has been the quiet half of this debate
+
+The consultation has been dominated by deprivation in the east, and the numbers justify the attention: BACA's catchment is far more deprived than anywhere else in the city. But catchment-level statistics are averages, and an average over a large paired catchment conceals whatever variation sits inside it. Hove and Portslade's more deprived neighbourhoods are pooled with Hove Park's much less deprived ones and disappear from the published figures.
+
+```{r cd-open-west}
+#| include: false
+ocur <- ocd$spec_profiles %>% filter(spec == "Current map")
+osng <- ocd$spec_profiles %>% filter(spec == "One per school, Ovingdean")
+o_hb <- ocur$pct_deprived[ocur$School == "Hove_Blatch"]
+o_hp <- osng$pct_deprived[osng$School == "Hove Park School"]
+o_bm <- osng$pct_deprived[osng$School == "Blatchington Mill School"]
+o_bmn <- round(osng$children[osng$School == "Blatchington Mill School"] * o_bm / 100)
+```
+
+Hove Park and Blatchington Mill together are `r round(o_hb, 1)`% deprived — **the least deprived catchment in the city**. Split them and the two halves are `r round(o_hp, 1)`% and `r round(o_bm, 1)`%. The combined figure is not a description of a place; it is an average across a social boundary, and it is the number that reaches the published statistics.
+
+Give Blatchington Mill its own geography and it holds roughly `r o_bmn` children from the most deprived 30% of neighbourhoods nationally. None of them are visible in any catchment-level figure, because they are pooled with Hove Park's. That is a reason to look at the west of the city with the care the east has received, rather than reading a low catchment average as evidence there is nothing there.
+:::
+
+::: {.callout-note}
+## How far to trust the size of these gaps
+
+An earlier version of this document apportioned each ward's children between its LSOAs by **postcode count**, which assumes every postcode holds the same number of eleven-year-olds. It does not — family housing, student housing and retirement housing have very different child densities, and the difference runs along exactly the lines catchment boundaries follow. That assumption flattened this section almost to nothing: the Hove Park and Blatchington Mill gap came out at 3.5 percentage points.
+
+These figures use ONS small-area population by single year of age instead, which is published and gives each LSOA's real age-11 share. The gap is now `r round(diff(range(ocd$pairs_split$pct_deprived[ocd$pairs_split$School %in% c("Hove Park School", "Blatchington Mill School")])), 1)` points, against about 25 on pupil-level records — still an understatement, but the same phenomenon rather than a different one.
+
+**Two figures in the table above should still be treated as artefacts.** Varndean at `r round(ocd$pairs_split$pct_deprived[ocd$pairs_split$School == "Varndean School"], 1)`% and Longhill's single-school catchment at around 17% are both implausible on their face — Longhill's catchment sits alongside BACA's at nearly 60% deprived, and a figure of 17% for the ground next to it cannot be right. The single-school designs place boundaries the open model has no way to check, and small catchments are very sensitive to exactly where those boundaries land. The paired figures, and the Hove Park / Blatchington Mill contrast in particular, are the ones that hold up.
+:::
+
+# The Whitehawk question {#sec-whitehawk-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Dorothy Stringer and Varndean's, and moved part of Kemptown in. Whether that helped or harmed Longhill, and whom it helped, is one of the most contested questions in the consultation — and it turns entirely on how families in those specific neighbourhoods behaved.
+
+Published data can show the redraw's *geography* (@sec-redraw) and its effect on catchment populations. It cannot show what it did to choices, because that needs preferences from particular origins.
+
+There is reason to think the answer cuts against both sides of the argument. It is quite possible that **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it** — in which case being placed in a catchment does not, by itself, make families choose a school. That would be consistent with the expectation about catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
+
+This is precisely the kind of question where the absence of evidence lets the loudest argument win. It is answerable in an afternoon with the records.
+:::
+
 # Deprivation and the catchment system {#sec-deprivation}
 
 Everything so far counts children. This section asks which children — the
@@ -1920,310 +2224,6 @@ This is why the levers in the rest of this report do not reach Hove Park. Catchm
 :::
 
 Eleven schools is eleven observations, and attractiveness, attainment and intake are entangled. The claim worth defending is the ordering one: families' revealed ordering matches raw attainment far more closely than it matches the intake-adjusted contribution, and Hove Park is among the schools where those two orderings diverge most.
-
-# What the 2024 redraw did {#sec-redraw}
-
-Before asking what a new catchment could do, it is worth pricing the one the
-city has already adopted. Every run in the sweep was repeated on both maps —
-same site, same decay, same attractiveness, same catchment strength, same
-entry year — so the redraw can be isolated.
-
-```{r redraw-pop}
-inp$regime_pop %>%
-  mutate(children = round(children)) %>%
-  pivot_wider(names_from = regime, values_from = children) %>%
-  transmute(Catchment = catchment,
-            `Pre-2024` = pre2024, `Option Z` = optionZ,
-            Change = optionZ - pre2024) %>%
-  arrange(Change) %>%
-  tbl(caption = "Children entering Year 7 in 2026, by catchment, under each map")
-```
-
-The headcount barely moves: Longhill's catchment gains about
-`r round(with(inp$regime_pop, children[regime=="optionZ" & catchment=="Longhill"] - children[regime=="pre2024" & catchment=="Longhill"]))`
-children. What changes is who they are. The zones moving *in* are no closer to
-Longhill than those moving *out* — both average about 34 minutes away — but
-they are markedly closer to the alternatives:
-
-```{r redraw-access}
-mv <- inp$zones %>%
-  filter(catch_pre2024 != catch_optionZ,
-         catch_pre2024 == "Longhill" | catch_optionZ == "Longhill") %>%
-  mutate(dir = if_else(catch_optionZ == "Longhill",
-                       "Moves in (Kemptown)", "Moves out (Whitehawk & Marina)"))
-
-inp$costs_now %>%
-  filter(name %in% c(LH, "Dorothy Stringer School", "Varndean School")) %>%
-  inner_join(mv %>% select(zone, dir, Oi), by = "zone") %>%
-  group_by(dir, name) %>%
-  summarise(mins = round(weighted.mean(cij, Oi), 1), .groups = "drop") %>%
-  pivot_wider(names_from = dir, values_from = mins) %>%
-  rename(School = name) %>%
-  tbl(caption = "Population-weighted journey time from the areas the redraw moves")
-```
-
-A child moved into Longhill's catchment has Stringer and Varndean roughly
-eight and seven minutes closer to hand than a child moved out of it. The model
-can see that, and prices the redraw accordingly:
-
-```{r redraw-effect}
-env$q6 %>%
-  filter(site == "now") %>%
-  group_by(entry_year) %>%
-  summarise(Median = round(median(shift), 1),
-            Lowest = round(min(shift), 1),
-            Highest = round(max(shift), 1),
-            `% of runs worse` = round(100 * mean(shift < 0)),
-            .groups = "drop") %>%
-  rename(`Entry year` = entry_year) %>%
-  tbl(caption = "Change in Longhill's modelled recruitment under option Z, against the pre-2024 map")
-```
-
-On open data the effect is small and its sign depends on how much weight
-catchment priority is given: with no catchment effect at all it is zero by
-construction, and at the strongest priority tested it is mildly positive,
-because the incoming children gain a priority they did not have. The honest
-summary is that **the open model cannot resolve this question** — the shifts
-are a fraction of a child either way, well inside the noise of everything else
-being swept.
-
-That is itself worth reporting. The redraw is exactly the kind of change whose
-effect depends on how families actually behave, not on how far apart things
-are, and behaviour is the thing published statistics do not record. An
-origin–destination matrix of preferences by area would settle it immediately.
-
-# Shrink, move, or redraw?
-
-::: {.callout-caution}
-## This result differs from the calibrated model
-
-The fill rates below inherit the over-prediction described under the chart in this section: because the open model recruits roughly twice as many children to Longhill as the records support, **every fill rate here is too high**, and the PAN at which the school appears viable is correspondingly too large.
-
-**How much too high is the open question.** If the over-prediction runs at the factor the envelope's own lower bound implies, configuration A would land somewhere near 40% by 2035 rather than anything approaching viable, and only the smallest configuration — Elm Grove at PAN 120 with redrawn catchments — would hold above 80% across the window. On the figures printed here several configurations look survivable at PAN 150; on that reading they would not be.
-
-What survives either reading is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order with confidence; treat the levels as an upper bound.
-:::
-
-```{r cfg-table}
-os$lh_band %>%
-  filter(entry_year %in% c(2026, 2030, 2035)) %>%
-  mutate(txt = sprintf("%.0f (%.0f–%.0f)", 100*pmin(central,1),
-                       100*pmin(lo,1), 100*pmin(hi,1))) %>%
-  select(config, entry_year, txt) %>%
-  pivot_wider(names_from = entry_year, values_from = txt) %>%
-  rename(Configuration = config) %>%
-  tbl(caption = "Longhill fill rate (%) — central specification, with the range across the parameter band in brackets")
-```
-
-```{r cfg-plot}
-#| fig-cap: "Longhill's natural recruitment under each configuration at the central specification. Dotted lines are whole forms of entry."
-
-os$natural %>%
-  mutate(lab = str_remove(config, "^[A-G]\\. ")) %>%
-  ggplot(aes(entry_year, natural, colour = lab, group = lab)) +
-  geom_hline(yintercept = c(90, 120, 150, 180), linetype = "dotted", colour = "grey60") +
-  annotate("text", x = 2035.3, y = c(90, 120, 150, 180),
-           label = c("3 FE", "4 FE", "5 FE", "6 FE"), hjust = 0, size = 3, colour = "grey45") +
-  geom_line(linewidth = 0.9) + geom_point(size = 2.2) +
-  scale_x_continuous(breaks = os$years, limits = c(2026, 2038)) +
-  scale_colour_brewer(palette = "Set2") +
-  expand_limits(y = 0) +
-  labs(title = "Longhill's natural size under each option",
-       subtitle = "Central specification; recruitment with the school's own admission number unbinding",
-       x = "Year 7 entry year", y = "Children recruited", colour = NULL) +
-  theme(legend.position = "bottom") +
-  guides(colour = guide_legend(nrow = 4))
-```
-
-::: {.callout-caution}
-## This chart is the most optimistic thing in the report, and it is wrong in a known direction
-
-**Read the level on this chart with great care.** It is where this model is most likely to be wrong, and the direction of the error is knowable even if its size is not.
-
-The chart puts Longhill's 2035 recruitment at **`r cnat("A", 2035)`** children where it stands today. The bottom of the sweep in @sec-envelope puts the same figure near **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`** — less than half. That is the range a calibrated model would resolve, and there is good reason to think it would land towards the lower end.
-
-**Why.** The open model can see how reachable Longhill is but has nothing that measures how strongly families *avoid* it. Published data records where children were offered places, not what they wanted. Once routed journey times let the model see that Longhill is genuinely accessible, it sends children there in numbers the city's actual admissions do not bear out — the validation below shows exactly that over-prediction.
-
-**What that would mean.** If the true figures sit near the lower bound, every curve here moves down by something approaching a factor of two, and the conclusion hardens considerably: no configuration would have Longhill recruiting above four forms of entry after 2030, and the current arrangement would fall below three. The *ordering* would be largely preserved — relocation and redrawing still help, in the same rank order — so the comparative reading survives either way. **The level does not.**
-
-Treat the shape of this chart as informative and the height of it as an upper bound.
-:::
-
-::: {.callout-important}
-## Relocation helps — a correction to an earlier version
-
-At the central specification the school recruits `r cnat("A", 2035)` children
-in 2035 where it is, against `r cnat("C", 2035)` at Elm Grove. Across the full
-sweep in @sec-envelope, relocation has a median effect of
-**+`r round(median(env$q3$gain[env$q3$entry_year == 2035]), 1)` children by
-2035**, positive in
-`r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs.
-
-An earlier version of this document reported the opposite — that no case for
-relocation was visible in open data. **That was wrong, and the cause was the
-travel matrix.** There were no routed journey times for the Elm Grove site, so
-it was given the average accessibility of a Brighton secondary. Rebuilding the
-`r5r` network over a merged East and West Sussex extract, and changing nothing
-else, moves the relocation effect from about −4 children to about +58 in 2026.
-The site sits on a main corridor and is markedly better connected than the
-average the approximation assumed.
-:::
-
-What other schools reducing their admission numbers would do is examined in @sec-pan-open.
-
-**Shrinking still works on its own.** Configuration B — a PAN of 150 at
-Ovingdean, no move, no redraw — fills in 2026 and holds at `r cfill("B", 2035)`
-in 2035. Configuration G, a PAN of 120 at Elm Grove with redrawn catchments,
-holds at `r cfill("G", 2035)`.
-
-::: {.callout-warning}
-## Read the open relocation figures with caution
-
-Routed costs improved the model's realism but made its fit to published offers
-*worse*, not better: R² falls to
-`r sprintf("%.2f", CalcRSquared(os$val$observed, os$val$modelled))`, and it now
-over-predicts Longhill by
-`r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])`
-children against
-`r round(os$val$observed[os$val$name == LH])` actually offered.
-
-The reason is visible in the arithmetic. Once the model can see how reachable
-Longhill really is, it sends far more children there than the city does. What
-it lacks is any measure of how strongly families *avoid* the school —
-something only individual preference data supplies. The open model therefore
-**overstates Longhill's viability**, and the relocation gain above is an upper
-bound rather than an estimate.
-
-The direction of the correction is solid; the magnitude is not.
-:::
-
-## Designing catchments rather than guessing them {#sec-design-open}
-
-The configurations above take the catchment map as given. A companion exercise, `public/R/08_catchment_design_open.R`, designs it instead, which matters because Peacehaven Community School joins the city's arrangements and its catchment has to be drawn from scratch rather than inherited.
-
-Assigning each neighbourhood to its nearest school gives a Voronoi diagram, which ignores capacity — the popular central schools would be handed far more children than they have places for. Adding the capacity constraint turns this into optimal transport. Give each catchment a scalar *price*, assign every neighbourhood to whichever minimises **journey time + price**, then raise the price of oversubscribed catchments and lower it for undersubscribed ones until each holds the right number of children. The result is an additively weighted Voronoi diagram, or *power diagram*: it minimises total travel time subject to every catchment being the right size, and its regions are contiguous, so the output is a map rather than a scatter of fragments. Every input is published — LSOA child counts, admission numbers from the adjudicator's determination, and the same routed journey times used throughout this document.
-
-Three constraints turned out to be necessary before the output was usable, and they are worth stating because each corrects a failure that looked plausible on the page.
-
-**Targets are capped at the schools' admission numbers.** Scaling targets proportional to PAN and then to the children available can hand a catchment more children than its school can admit. Patcham was the worst case, targeted at 275 against a PAN of 225. A catchment can now come out smaller than its proportional share, which is the honest answer when the school is small.
-
-**Each neighbourhood may only be assigned to one of its three nearest catchments.** Without this the price-adjustment step occasionally satisfies a capacity constraint by reaching across the city.
-
-**The repair step must refuse impossible moves.** After the price adjustment, small detached fragments are absorbed into a neighbouring catchment and boundary neighbourhoods are traded until capacity is restored. Both phases picked the cheapest candidate using functions that *rank* infinities rather than rejecting them — so when the three-nearest rule ruled out every adjacent catchment, a move was still made, to the least impossible option. The symptom was two Peacehaven neighbourhoods sitting in the Dorothy Stringer and Varndean catchment 9.6 km away, with two central neighbourhoods exported to Peacehaven in exchange. The design stage had placed all four correctly; the repair undid it. With the fix, the expansion area is whole within the Peacehaven catchment and that catchment reaches into the city only along the Saltdean fringe.
-
-### Relocation severs Longhill from its eastern hinterland
-
-The designed maps reproduce the finding above — redrawing is worth roughly the same whether or not the school shrinks first, adding of the order of eight points to the 2030 fill rate — but they add one result that the fixed-map configurations cannot show.
-
-```{r cd-open-hinterland}
-#| include: false
-ocd <- readRDS(file.path(PUBLIC_OUT, "catchment_design_open.rds"))
-n_sev <- nrow(ocd$hinterland); c_sev <- round(sum(ocd$hinterland$Oi, na.rm = TRUE))
-n_gain <- nrow(ocd$gained);    c_gain <- round(sum(ocd$gained$Oi, na.rm = TRUE))
-t_now <- ocd$east_times$`Longhill High School`[ocd$east_times$site == "Ovingdean"]
-t_elm <- ocd$east_times$`Longhill High School`[ocd$east_times$site == "Elm Grove"]
-```
-
-Hold the admission number at the adjudicator's 210 and design the catchment around each candidate site in turn. **`r n_sev` neighbourhoods, holding `r c_sev` children, belong to Longhill at Ovingdean but not at Elm Grove.** For those places the journey to Longhill goes from an average of `r sprintf("%.0f", t_now)` minutes to `r sprintf("%.0f", t_elm)` — while Dorothy Stringer and Varndean stay where they are, at around 68 and 60 minutes. They are not moving towards a better school; the school is moving away from them, and the designer reassigns them because it has to.
-
-Against that, relocation gains Longhill `r n_gain` neighbourhoods and `r c_gain` children nearer the city centre. So the move is a genuine trade rather than a straight loss — but it is a trade, and it is one the fill rates do not show.
-
-This is a cost of relocation that the fill rates hide, since they are dominated by the central demand the move buys. A viable school serving the east of the city with its natural catchment intact argues for the Ovingdean site and a lower admission number; the highest fill rate argues for Elm Grove and a smaller school still. Those point in opposite directions, and choosing between them is a judgement about what the school is for.
-
-### One catchment per school {#sec-single-open}
-
-Brighton pairs two of its catchments — Hove Park with Blatchington Mill, Dorothy Stringer with Varndean. Splitting them gives each school its own geography. It reassigns every neighbourhood in the city rather than the sixty or so a paired redraw moves, because separating two schools that share a catchment forces a boundary through the middle of an existing one and the price adjustment propagates that outward. So it is a thought experiment, not a proposal — but it answers two questions the paired designs cannot.
-
-**It does not shorten the journey to school.**
-
-```{r cd-open-travel}
-ocd$travel_cmp %>%
-  transmute(Design = design, Specification = spec, `Longhill site` = site,
-            Catchments = catchments,
-            `Mean journey (min)` = round(mean_minutes, 2),
-            `vs current map` = sprintf("%+.2f", vs_current)) %>%
-  tbl(caption = sprintf("Mean journey to the catchment school under each design. The current map gives %.2f minutes.", ocd$baseline_travel))
-```
-
-No single-school design beats the best paired one. A paired catchment lets the design send a neighbourhood to whichever of two schools is nearer; splitting the pair removes that freedom, and the journey gets slightly longer. But the honest headline is the size of the spread: **every design in the table sits within about a minute of every other, on a mean journey of `r round(ocd$baseline_travel)` minutes.** Catchment geometry is not where travel-time gains are. Where a school *is* matters; which catchment a child is put in barely does.
-
-**What it would do to deprivation is more interesting**, because this is what the policy debate turns on.
-
-```{r cd-open-dep}
-ocd$spec_gorard %>%
-  transmute(Specification = spec, Catchments = catchments,
-            `Gorard index` = round(gorard, 3),
-            `Most − least deprived (pp)` = round(range_pp, 1)) %>%
-  tbl(caption = "Segregation of where children live, by catchment specification. Higher Gorard means disadvantage is spread more unevenly across catchments.")
-```
-
-Two measures move in opposite directions, and both readings are correct.
-
-The **gap between the most and least deprived catchment narrows sharply** — from `r round(ocd$spec_gorard$range_pp[ocd$spec_gorard$spec == "Current map"])` percentage points under the current map to `r round(ocd$spec_gorard$range_pp[ocd$spec_gorard$spec == "One per school, Ovingdean"])` with one catchment per school. Smaller catchments cannot span the whole social gradient, so the extremes come in.
-
-But the **Gorard index rises**, from `r sprintf("%.3f", ocd$spec_gorard$gorard[ocd$spec_gorard$spec == "Current map"])` to `r sprintf("%.3f", ocd$spec_gorard$gorard[ocd$spec_gorard$spec == "One per school, Ovingdean"])`. More catchments means more of them can be socially distinctive, and the index measures unevenness across all of them rather than the range between the extremes. If the worry is that some children live in a catchment unlike the rest of the city, splitting helps. If the worry is the overall evenness of the spread, it does not.
-
-```{r cd-open-pairs}
-ocd$pairs_split %>%
-  transmute(School, Children = children, `% deprived` = pct_deprived) %>%
-  tbl(caption = "What splitting the two paired catchments would give each school — children living in the catchment, not modelled intakes")
-```
-
-Each pair splits into a less deprived and a more deprived half, Hove Park taking the less deprived side of its pair and Varndean the less deprived side of its own. That is worth setting against what @sec-deprivation shows about intakes: the sorting that happens *inside* a shared catchment does not follow the geography underneath it, and pairing masks a social boundary rather than creating one.
-
-### The fairness argument for splitting them {#sec-dual-fairness-open}
-
-Public argument during the consultation held that having some dual and some single-school catchments is unfair, because families in a dual catchment get a *choice* of two schools while families in a single-school catchment get none. Two things are worth saying about it.
-
-**In an oversubscribed catchment there is no choice, only chance.** Naming a school does not secure it; where places are short the tiebreaker decides, and the tiebreaker is random. A dual catchment does not confer two choices. It confers one preference and a probability. How often that bites can only be measured on individual preference and offer records, which are not published — work on those records finds it bites hard at one school in the pair and essentially not at all at the others.
-
-**The pairing does redistributive work that splitting would undo.** This is the part the argument misses. A shared catchment mixes two populations the geography would otherwise separate, and the tables above show the direction: each pair splits into a more and a less deprived half, so the pair is holding together a social range that single-school catchments would divide.
-
-That inverts the fairness case. Removing dual catchments would not remove the element of chance — that comes from oversubscription, not from pairing. It would remove the mixing and leave the chance where it was.
-
-::: {.callout-important}
-## The west of the city has been the quiet half of this debate
-
-The consultation has been dominated by deprivation in the east, and the numbers justify the attention: BACA's catchment is far more deprived than anywhere else in the city. But catchment-level statistics are averages, and an average over a large paired catchment conceals whatever variation sits inside it. Hove and Portslade's more deprived neighbourhoods are pooled with Hove Park's much less deprived ones and disappear from the published figures.
-
-```{r cd-open-west}
-#| include: false
-ocur <- ocd$spec_profiles %>% filter(spec == "Current map")
-osng <- ocd$spec_profiles %>% filter(spec == "One per school, Ovingdean")
-o_hb <- ocur$pct_deprived[ocur$School == "Hove_Blatch"]
-o_hp <- osng$pct_deprived[osng$School == "Hove Park School"]
-o_bm <- osng$pct_deprived[osng$School == "Blatchington Mill School"]
-o_bmn <- round(osng$children[osng$School == "Blatchington Mill School"] * o_bm / 100)
-```
-
-Hove Park and Blatchington Mill together are `r round(o_hb, 1)`% deprived — **the least deprived catchment in the city**. Split them and the two halves are `r round(o_hp, 1)`% and `r round(o_bm, 1)`%. The combined figure is not a description of a place; it is an average across a social boundary, and it is the number that reaches the published statistics.
-
-Give Blatchington Mill its own geography and it holds roughly `r o_bmn` children from the most deprived 30% of neighbourhoods nationally. None of them are visible in any catchment-level figure, because they are pooled with Hove Park's. That is a reason to look at the west of the city with the care the east has received, rather than reading a low catchment average as evidence there is nothing there.
-:::
-
-::: {.callout-note}
-## How far to trust the size of these gaps
-
-An earlier version of this document apportioned each ward's children between its LSOAs by **postcode count**, which assumes every postcode holds the same number of eleven-year-olds. It does not — family housing, student housing and retirement housing have very different child densities, and the difference runs along exactly the lines catchment boundaries follow. That assumption flattened this section almost to nothing: the Hove Park and Blatchington Mill gap came out at 3.5 percentage points.
-
-These figures use ONS small-area population by single year of age instead, which is published and gives each LSOA's real age-11 share. The gap is now `r round(diff(range(ocd$pairs_split$pct_deprived[ocd$pairs_split$School %in% c("Hove Park School", "Blatchington Mill School")])), 1)` points, against about 25 on pupil-level records — still an understatement, but the same phenomenon rather than a different one.
-
-**Two figures in the table above should still be treated as artefacts.** Varndean at `r round(ocd$pairs_split$pct_deprived[ocd$pairs_split$School == "Varndean School"], 1)`% and Longhill's single-school catchment at around 17% are both implausible on their face — Longhill's catchment sits alongside BACA's at nearly 60% deprived, and a figure of 17% for the ground next to it cannot be right. The single-school designs place boundaries the open model has no way to check, and small catchments are very sensitive to exactly where those boundaries land. The paired figures, and the Hove Park / Blatchington Mill contrast in particular, are the ones that hold up.
-:::
-
-# The Whitehawk question {#sec-whitehawk-open}
-
-::: {.callout-note}
-## This section cannot be done on published data
-
-The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Dorothy Stringer and Varndean's, and moved part of Kemptown in. Whether that helped or harmed Longhill, and whom it helped, is one of the most contested questions in the consultation — and it turns entirely on how families in those specific neighbourhoods behaved.
-
-Published data can show the redraw's *geography* (@sec-redraw) and its effect on catchment populations. It cannot show what it did to choices, because that needs preferences from particular origins.
-
-There is reason to think the answer cuts against both sides of the argument. It is quite possible that **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it** — in which case being placed in a catchment does not, by itself, make families choose a school. That would be consistent with the expectation about catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
-
-This is precisely the kind of question where the absence of evidence lets the loudest argument win. It is answerable in an afternoon with the records.
-:::
 
 # The free school meals priority {#sec-fsm-open}
 
