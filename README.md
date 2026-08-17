@@ -1,6 +1,6 @@
 # Brighton & Hove secondary school admissions — an open-data analysis
 
-**[Read the report →](https://adamdennett.github.io/bh_school_admissions_open/)**
+**[Read the report →](https://adamdennett.github.io/bh-school-model/)**
 
 A spatial interaction model of secondary school demand in Brighton & Hove,
 built entirely from published sources. It covers the current city and the four
