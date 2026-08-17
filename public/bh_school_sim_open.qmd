@@ -114,6 +114,24 @@ questions:
 3. **What does the 2028 boundary expansion do**, when Brighton & Hove takes in
    East Saltdean, Telscombe and Peacehaven?
 
+::: {.callout-important}
+## An offer to the council, and why it matters now
+
+**This analysis is offered as the beginning of a collaboration, not as a criticism.**
+
+Brighton & Hove faces a demographic change that will run for the next fifteen to twenty years. The Year 7 cohort is falling, four wards join the authority in 2028, and the schools affected are not the ones with the most capacity to absorb it. Decisions taken in the next two admissions rounds — one school's admission number here, one catchment boundary there — will compound across that whole period.
+
+The difficulty is that those decisions are currently being taken **one at a time**, each on its own evidence, and often in response to whichever case has been argued most forcefully. A change to Longhill's admission number is considered separately from a change to Dorothy Stringer's, which is considered separately from where a catchment boundary runs, which is considered separately from what happens when Peacehaven joins. Each may be defensible alone. Together they may not add up to a system that works, and nothing in the current process would reveal that.
+
+This document exists to make a different kind of conversation possible: one in which the city's schools are treated as a **single interacting system**, where a change at one school is understood in terms of what it does to every other, across the whole period the demographic change is going to last.
+
+It is built entirely from published data, deliberately, so that anyone can check it. But published data has hard limits, and this report is explicit about every one of them. Several sections below exist only to say *what cannot be established here and what the council's own records would establish immediately.* They are marked with a note like this one.
+
+**What is being asked for is access to the admissions records the council already holds** — preferences, offers, allocation criteria, home postcodes — under the arrangements that already govern research use of pupil data. Nothing new would need collecting. In return, the analysis becomes far sharper: the sections marked below stop being gaps, the largest source of error in this report disappears, and the council gets a tested model of its own system that can be re-run against any proposal before it is consulted on.
+
+The alternative is not that these questions go unanswered. It is that they get answered by whoever argues loudest, using whatever numbers are to hand.
+:::
+
 # Method {#sec-method}
 
 ## The model
@@ -610,6 +628,20 @@ that open data cannot pin down. This section does not. Whatever else is
 uncertain, Longhill is poorly sited relative to where Brighton's children
 live, and the Elm Grove site is not.
 
+# Calibration {#sec-calibration-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+A spatial interaction model has two parameters that decide everything it says: **how sharply distance deters** a family from choosing a school ($\beta$), and **how much being in catchment shifts a choice** ($\gamma$). Both are estimated by fitting the model to observed flows — how many children actually travel from each neighbourhood to each school.
+
+Published data gives school totals, not flows. There is no open way to estimate either parameter, so this document does not try. Instead it **sweeps** both across their full plausible range and reports which conclusions hold everywhere in that range and which depend on where in it the truth lies (@sec-envelope). That is an honest response to the limitation, and it is why several findings here are stated as ranges rather than numbers.
+
+**With admissions records this becomes a half-day's work.** A Poisson regression of flows on log distance and a catchment indicator, with origin fixed effects, returns both parameters with standard errors. The parallel analysis on records does exactly this and finds a distance decay that is stable across specifications and years — meaning the wide bands in this report are not irreducible uncertainty about Brighton, only uncertainty about what the records would say.
+
+The gain is not academic. Every figure in this report that carries a range would carry a number instead.
+:::
+
 # What are families actually choosing? {#sec-choice}
 
 Before modelling anything, a question that can be answered from published data
@@ -763,6 +795,46 @@ individual-level preference data measures that, and it is not published.
 **Every figure below is therefore generous to Longhill.** Where the model says
 the school struggles to fill, the real position is worse; where it says
 relocation helps, the true gain is smaller.
+
+# Reading the admissions rules instead of inferring them {#sec-rules-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+Every model in this document *infers* how the admissions rules work from where children end up. The records contain the answer directly: each offer carries the criterion under which it was made — sibling, catchment, free school meals, distance, looked-after — so the rules can be read rather than reconstructed.
+
+That distinction matters more than it sounds, because inference and reading can disagree. The parallel analysis on records finds one result that no amount of open modelling would have produced: **catchment priority is worth essentially nothing at Longhill.** Almost everyone who names the school is offered a place, whether they live in its catchment or not, because it is undersubscribed. Priority only bites where places are scarce.
+
+If that is right, it changes the policy conclusion entirely. **Redrawing Longhill's catchment cannot work by letting more children in — nobody is being turned away.** It can only work by changing which school families *name*. That is a much weaker and slower mechanism, and any proposal resting on a redraw needs to be honest about which of the two it is relying on.
+
+This report cannot confirm or refute that finding. It is the clearest single example of a conclusion that is invisible in published data, cheap to establish with records, and directly consequential for a decision the city is about to take.
+:::
+
+# Do all families choose the same way? {#sec-heterogeneity-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+Everything above treats families as responding identically to distance and attractiveness. They do not. Splitting applicants by the deprivation of their home neighbourhood and fitting the model separately to each group tests whether the weight placed on a school's reputation, and the willingness to travel for it, vary across the social gradient.
+
+The parallel analysis finds they vary a great deal — the weight on attractiveness roughly **doubles** from the most to the least deprived third of neighbourhoods, and the difference is strongly significant. Allowing for it lifts the model's fit substantially and reproduces a sorting pattern that a single-parameter model cannot: less deprived families in a shared catchment securing the school they prefer, more deprived families not.
+
+That is the mechanism behind the Hove Park and Blatchington Mill contrast in @sec-deprivation, and it cannot be seen in aggregate data at all — every child in an LSOA looks identical to a model built on published sources. **Any policy aimed at social mix is aimed at this mechanism**, so not being able to measure it is a serious limitation on what this report can say about equity.
+
+Only individual records can separate it. Postcodes alone are not enough; the preference ordering is what carries the signal.
+:::
+
+# How good would Longhill have to be? {#sec-required-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+A useful way to state the problem in reverse: rather than asking what Longhill's intake would be under some scenario, ask **how much more attractive the school would need to become to fill at a given admission number**, holding its location and everything else constant. That converts an abstract question about reputation into a number on the same scale as the attainment measures the model already uses.
+
+It needs a calibrated model, which needs records (@sec-calibration-open). With one, the answer is a single figure per admission number, and it can be compared against how far schools have actually moved on that scale in practice — which tells you whether the required improvement is ambitious, or simply outside anything ever observed.
+
+That comparison is the honest test of whether "improve the school" is a viable alternative to changing its size or location. This report cannot make it.
+:::
 
 # A shrinking cohort
 
@@ -1635,6 +1707,20 @@ These figures use ONS small-area population by single year of age instead, which
 **Two figures in the table above should still be treated as artefacts.** Varndean at `r round(ocd$pairs_split$pct_deprived[ocd$pairs_split$School == "Varndean School"], 1)`% and Longhill's single-school catchment at around 17% are both far from what records show (roughly 25% and 58%). The single-school designs place boundaries the open model has no way to check, and small catchments are sensitive to exactly where those boundaries land. The paired figures, and the Hove Park / Blatchington Mill contrast in particular, are the ones that hold up.
 :::
 
+# The Whitehawk question {#sec-whitehawk-open}
+
+::: {.callout-note}
+## This section cannot be done on published data
+
+The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Dorothy Stringer and Varndean's, and moved part of Kemptown in. Whether that helped or harmed Longhill, and whom it helped, is one of the most contested questions in the consultation — and it turns entirely on how families in those specific neighbourhoods behaved.
+
+Published data can show the redraw's *geography* (@sec-redraw) and its effect on catchment populations. It cannot show what it did to choices, because that needs preferences from particular origins.
+
+The parallel analysis finds something that cuts against both sides of the argument. **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it.** Being placed in a catchment does not, by itself, make families choose a school — which is consistent with the finding on catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
+
+This is precisely the kind of question where the absence of evidence lets the loudest argument win. It is answerable in an afternoon with the records.
+:::
+
 # The free school meals priority {#sec-fsm-open}
 
 Brighton & Hove has introduced a free school meals priority into its secondary
@@ -1929,7 +2015,23 @@ The council holds individual preference and offer records: for each applicant, t
 
 **Who leaves, and why.** Roughly a fifth of the city's children do not enter its state secondary schools. Published data cannot say whether they go independent, to a faith school, or out of the authority, nor where they live. Records can, and the east-of-the-city pattern that emerges is central to any judgement about Longhill's future.
 
-None of this requires new collection, a survey, or a change of practice. It requires access to records the admissions process produces as a by-product, under the arrangements that already govern research use of pupil data. The analysis here is offered in the hope that it makes the case for that access rather than substituting for it — every section above would be sharper, and several would stop needing caveats that currently blunt them.
+Five sections of this report exist only to mark where published data runs out: @sec-calibration-open, @sec-rules-open, @sec-heterogeneity-open, @sec-required-open and @sec-whitehawk-open. Each says what cannot be established here and what the records would establish. They are the shape of the offer.
+
+None of this requires new collection, a survey, or a change of practice. It requires access to records the admissions process produces as a by-product, under the arrangements that already govern research use of pupil data.
+
+## Why this is worth doing now rather than later
+
+The case is not that the analysis would be interesting. It is that the city is about to make a series of decisions that will bind for fifteen to twenty years, and is making them one at a time.
+
+Consider what is in front of the council across the next few rounds: Longhill's admission number and possibly its site; Dorothy Stringer's admission number, already once refused by the adjudicator; the free school meals criterion, whose reach is about to be cut by nearly half by a change in national eligibility rules; the catchment map, redrawn in 2024 and not yet settled; and the arrival of four wards and a further secondary school in 2028. Each of these is currently a separate decision with a separate evidence base and a separate consultation.
+
+**They are not separate.** Every result in this document says so. Reducing one school's admission number pushes demand onto its neighbours and the effect concentrates, unevenly, on the school least able to absorb it. Redrawing a catchment changes who is in it, and therefore the social composition of two schools, not one. Relocating a school severs it from part of its hinterland while gaining another part. A model of the whole system is the only way to see any of that before it happens rather than afterwards.
+
+The demographic reality makes this urgent rather than optional. The cohort is falling, the fall is not evenly distributed across the city, and surplus capacity has to land somewhere. A city that decides where it lands, deliberately and once, will get a better answer than one that discovers where it landed after five years of separate decisions each of which seemed reasonable in isolation.
+
+That is what this work is for. It is not an argument for any particular outcome for Longhill, or for any school — the results here point in different directions depending on what the city decides it values, and the report says so wherever that happens. It is an argument for having the conversation with the whole picture in view, and for doing so while there is still time for the answer to matter.
+
+The offer stands: the model, the code, and the analysis are open, and the parts that need records will be done properly and shared if the records are made available.
 
 # Testable predictions
 
