@@ -26,7 +26,9 @@ steps <- c(
   "public/R/04_brightopia.R",            # the distance-only model
   "public/R/05_pan_scenarios_open.R",    # admission-number scenarios
   "public/R/06_fsm_criterion_open.R",    # the FSM priority, from published sources
-  "public/R/07_deprivation_open.R"       # IDACI and catchment deprivation
+  "public/R/07_deprivation_open.R",      # IDACI and catchment deprivation
+  "public/R/08_catchment_design_open.R", # designed catchments, open inputs
+  "public/R/09_adjudicator_preferences.R" # catchment-level preference matrix
 )
 
 t0 <- Sys.time()

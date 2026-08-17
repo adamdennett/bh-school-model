@@ -188,6 +188,35 @@ child somewhere. Modelled flows are then constrained to school capacity by
 iterative proportional fitting, so demand displaced from a full school
 cascades to the next-best option rather than vanishing.
 
+::: {.callout-note}
+## Why this model has a catchment term and the calibrated one does not
+
+The model here carries an explicit **catchment priority parameter**, $\gamma$,
+which adds a fixed bonus to a school's utility for families living in its
+catchment. It is swept from 0 to 2.4 because published data cannot pin it down.
+
+The calibrated model has no such term. It does not need one, and that is worth
+understanding rather than passing over. With individual records you can fit a
+**destination fixed effect** for every school — a single number absorbing
+everything that makes a school more or less chosen, whatever the cause:
+reputation, buildings, sixth form, siblings, catchment, or whatever else is
+operating. The catchment effect is then not assumed at all. It is measured, by
+comparing what happens to families inside and outside a catchment who named the
+same school.
+
+So $\gamma$ here is a **stand-in for a measurement**, not a rival theory of how
+admissions work. That has two consequences worth carrying through the rest of
+this document. It is why catchment priority appears as a swept band rather than
+a number. And it is why the sweep can be misleading: a single $\gamma$ applied
+city-wide forces catchment priority to be worth the same at every school, when
+the evidence in @sec-rules-open suggests it is worth a great deal at an
+oversubscribed school and close to nothing at an undersubscribed one. The
+variance decomposition in @sec-envelope shows $\gamma$ accounting for under 3%
+of the variation in the answer, which is reassuring — but that is partly because
+a parameter forced to be uniform cannot express the effect that actually
+matters.
+:::
+
 **A note on notation.** $c_{ij}$ is the generalised *cost* of travel from $i$
 to $j$, measured in minutes of walk and bus journey time routed over the real
 network — not a straight-line distance. The symbol is held to that meaning
@@ -856,7 +885,29 @@ relocation helps, the true gain is smaller.
 
 Every model in this document *infers* how the admissions rules work from where children end up. The records contain the answer directly: each offer carries the criterion under which it was made — sibling, catchment, free school meals, distance, looked-after — so the rules can be read rather than reconstructed.
 
-That distinction matters more than it sounds, because inference and reading can disagree. There is one expectation here that no amount of open modelling can settle but that pupil-level records would resolve immediately: **catchment priority is probably worth close to nothing at Longhill.** The reasoning is simple and does not require the data — priority only bites where places are scarce, and Longhill is undersubscribed, so almost anyone naming it should be offered a place whether or not they live in its catchment.
+That distinction matters more than it sounds, because inference and reading can disagree. There is one expectation here that open modelling cannot settle on its own: **catchment priority is probably worth close to nothing at Longhill.** The reasoning does not require any data — priority only bites where places are scarce, and Longhill is undersubscribed, so almost anyone naming it should be offered a place whether or not they live in its catchment.
+
+**The adjudicator bundle lets this be checked, and it holds up.**
+
+```{r adj-lh}
+ap <- readRDS(file.path(PUBLIC_OUT, "adjudicator_preferences.rds"))
+apx <- ap$prefs %>% filter(!grepl("Total", school))
+
+apx %>% filter(school == "Longhill High School") %>%
+  mutate(grp = if_else(area == "CA-F", "In Longhill's catchment (CA-F)",
+                       "All other catchments")) %>%
+  group_by(Group = grp) %>%
+  summarise(`First preferences` = sum(pref1),
+            `Named at any rank` = sum(pref1 + pref2 + pref3),
+            Allocated = sum(allocated), .groups = "drop") %>%
+  tbl(caption = "Longhill: preferences and allocations by home catchment, three rounds pooled. Source: BHCC evidence to the Schools Adjudicator, item 8.1")
+```
+
+Across three admissions rounds, **359 children from Longhill's own catchment were allocated to it while only 269 had named it first** — ninety more places filled than there were first preferences to fill them. From outside the catchment, 38 were allocated against 14 first preferences.
+
+A school that admits substantially more children than choose it is not rationing places, and a school that is not rationing places cannot be conferring an advantage through catchment priority. **On the council's own evidence, being in Longhill's catchment does not appear to secure anything that being outside it would not.** That is the conclusion the modelling above could only assume, and it now rests on the authority's own submission rather than on a parameter sweep.
+
+It also means the redraw can only work through the preference channel — by changing which school families *name* — which is a slower and much weaker mechanism than the priority channel it is often assumed to operate through.
 
 If that is right, it changes the policy conclusion entirely. **Redrawing Longhill's catchment cannot work by letting more children in — nobody is being turned away.** It can only work by changing which school families *name*. That is a much weaker and slower mechanism, and any proposal resting on a redraw needs to be honest about which of the two it is relying on.
 
