@@ -114,6 +114,20 @@ questions:
 3. **What does the 2028 boundary expansion do**, when Brighton & Hove takes in
    East Saltdean, Telscombe and Peacehaven?
 
+## Who wrote this, and why these methods {#sec-provenance}
+
+I am Professor of Urban Analytics at UCL's Centre for Advanced Spatial Analysis. Spatial interaction models — the class of model this report is built on — have been a central part of my research for around fifteen years, and I have published on their formulation, calibration and application to population flows.
+
+Three pieces are directly relevant to what is done here, and are offered so that the methods can be checked against the literature rather than taken on trust:
+
+- Rowe, F., Lovelace, R. and **Dennett, A.** (2024) [Spatial interaction modelling: a manifesto](https://doi.org/10.4337/9781802203233.00019), in *A Research Agenda for Spatial Analysis*, Edward Elgar. Sets out the modern case for these models, including the reproducibility and open-code standards this report tries to meet.
+- **Dennett, A.** and Wilson, A. (2013) [A multilevel spatial interaction modelling framework for estimating interregional migration in Europe](https://doi.org/10.1068/a45398), *Environment and Planning A*, 45(6). The multilevel treatment of nested flows, of which the catchment structure here is a simple case.
+- **Dennett, A.** (2018) [Modelling population flows using spatial interaction models](https://discovery.ucl.ac.uk/id/eprint/10052338/), *Australian Population Studies*, 2(2). A practical account of calibrating and validating exactly the production-constrained form used in @sec-method.
+
+This matters for one reason. **The model in this report is not novel, and that is the point.** It is the standard production-constrained spatial interaction model, in continuous use since the 1960s, applied to school admissions in the way it is routinely applied to migration, retail catchments and hospital demand. Its behaviour is well understood, its failure modes are documented, and its calibration is textbook. Nothing here rests on a bespoke method that only its author can evaluate.
+
+What *is* unusual is the constraint: building it entirely from published data, and being explicit at every point about what that costs. Where the published sources cannot support a conclusion, this report says so rather than reaching for one.
+
 ::: {.callout-important}
 ## An offer to the council, and why it matters now
 
@@ -138,19 +152,28 @@ The alternative is not that these questions go unanswered. It is that they get a
 
 A production-constrained spatial interaction model:
 
-$$T_{ij} = A_i O_i W_j^{\alpha} d_{ij}^{-\beta} \qquad
-A_i = \frac{1}{\sum_j W_j^{\alpha} d_{ij}^{-\beta}}$$
+$$T_{ij} = A_i O_i W_j^{\alpha} c_{ij}^{-\beta} \qquad
+A_i = \frac{1}{\sum_j W_j^{\alpha} c_{ij}^{-\beta}}$$
 
 where $T_{ij}$ is the flow of children from neighbourhood $i$ to school $j$,
-$O_i$ the children living in $i$, $W_j$ school $j$'s attractiveness, $d_{ij}$
+$O_i$ the children living in $i$, $W_j$ school $j$'s attractiveness, $c_{ij}$
 the walk/bus journey time, and $A_i$ the balancing factor that places every
 child somewhere. Modelled flows are then constrained to school capacity by
 iterative proportional fitting, so demand displaced from a full school
 cascades to the next-best option rather than vanishing.
 
+**A note on notation.** $c_{ij}$ is the generalised *cost* of travel from $i$
+to $j$, measured in minutes of walk and bus journey time routed over the real
+network — not a straight-line distance. The symbol is held to that meaning
+throughout. The one place a true distance appears is the competing-destinations
+term in @sec-brightopia, where $d_{jk}$ is the straight-line separation between
+two *schools* in kilometres; that is a different quantity and keeps a different
+symbol.
+
 Method after Dennett, *Idiots' Guide to Spatial Interaction Modelling*,
 [Part 1](https://rpubs.com/adam_dennett/257231) and
-[Part 2](https://rpubs.com/adam_dennett/259068).
+[Part 2](https://rpubs.com/adam_dennett/259068), and the references in
+@sec-provenance.
 
 ## How $W_j$ was arrived at {#sec-wj}
 
@@ -495,7 +518,11 @@ $$C_j = \sum_{k \neq j} W_k \, d_{jk}^{-\sigma}$$
 Here $k$ counts through the other schools — the $k \neq j$ underneath the sum
 means "every school except this one" — $d_{jk}$ is the distance from school $j$
 to school $k$, $W_k$ that school's weight, and $\sigma$ how fast the effect
-fades with distance. In Brightopia every school is identical, so $W_k$ drops
+fades with distance. The change of symbol is deliberate: $d_{jk}$ is a
+straight-line distance in kilometres between two schools, not a travel-time
+cost like $c_{ij}$. Nobody makes the journey from one school to another, so
+routing it would be meaningless — what matters is only how clustered the
+schools are. In Brightopia every school is identical, so $W_k$ drops
 out and the measure becomes pure spatial clustering: with $\sigma = 1$ it
 reduces to adding up one-over-the-distance to each of the other nine schools.
 
@@ -571,7 +598,7 @@ process the choice hierarchically, picking an area and then a school within it,
 so omitting a competition term loads spatial structure onto the distance
 parameter and biases it.
 
-$$T_{ij} = A_i O_i W_j^{\alpha} C_j^{\delta} d_{ij}^{-\beta}$$
+$$T_{ij} = A_i O_i W_j^{\alpha} C_j^{\delta} c_{ij}^{-\beta}$$
 
 Fitting $\delta$ requires observed origin–destination flows, which is exactly
 what published statistics do not provide — the identification problem set out
