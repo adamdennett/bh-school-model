@@ -984,6 +984,110 @@ If that is right, it changes the policy conclusion entirely. **Redrawing Longhil
 This report cannot confirm or refute that finding. It is the clearest single example of a conclusion that is invisible in published data, cheap to establish with records, and directly consequential for a decision the city is about to take.
 :::
 
+# The free school meals priority {#sec-fsm-open}
+
+Brighton & Hove has introduced a free school meals priority into its secondary
+oversubscription criteria, and placed it **above catchment residence**:
+
+| | Criterion |
+|---|---|
+| 3 | Sibling link |
+| 4 | Children in catchment eligible for FSM, up to the city average |
+| 5 | Other children eligible for FSM, up to the city average |
+| 6 | Open admissions (5% quota) |
+| 7 | Children in catchment |
+| 8 | Other children |
+
+Criteria 4 and 5 lift an eligible child above every catchment resident.
+Criterion 5 is the redistributive one: it places a child at a school they do
+not live near, ahead of children who do.
+
+Everything in this section is published. The adjudicator required the council
+to set out both its 2026 outturn by criterion and its own 2027 projection, so
+the effect can be read off the council's arithmetic rather than modelled.
+
+```{r fsm-open-city}
+fo <- readRDS(file.path(PUBLIC_OUT, "fsm_criterion_open.rds"))
+
+fo$city %>%
+  transmute(Criterion = criterion, Offers = offers,
+            `Share of offers` = sprintf("%.1f%%", share)) %>%
+  tbl(caption = "City-wide offers by oversubscription criterion, 2026")
+```
+
+```{r fsm-open-proj}
+fo$projection %>%
+  transmute(School = school, Criterion = criterion,
+            `2026 outturn` = y2026, `2027 projected` = y2027,
+            Change = change) %>%
+  tbl(caption = paste0("The three schools the council expects to be oversubscribed. Source: ",
+                       fo$source, "."))
+```
+
+Across those three schools the FSM criteria account for `r fo$fsm_2026` places
+in 2026, falling to `r fo$fsm_2027` projected for 2027 — a drop of
+`r sprintf("%.0f%%", 100 * (1 - fo$fsm_2027 / fo$fsm_2026))`.
+
+::: {.callout-important}
+## The priority is being cut by nearly half
+
+Eligibility is being narrowed to **Targeted FSM**. The council states that
+approximately **`r sprintf("%.0f%%", 100 * fo$targeted_share)` of currently
+FSM-eligible pupils will qualify**, and that it "is anticipating a decrease of
+`r sprintf("%.0f%%", 100 * fo$stated_decrease)` in pupils eligible for the FSM
+admissions priority".
+
+This matters beyond the criterion itself. The council's equalities case for the
+wider admissions changes rests on the proposition that displacement is
+"unlikely to include children eligible for free school meals as these pupils
+have a higher priority which sits above children living in the school's
+catchment area" — a protection being substantially withdrawn in the same year,
+with no further modelling completed.
+
+Where those children fall to is set by the order above. In-catchment losers
+drop to criterion 7. Out-of-catchment losers drop to criterion 8, below every
+catchment child, or into competition for the 5% open quota.
+:::
+
+## An arithmetic check worth making
+
+The council's stated basis is that 56% of currently eligible pupils qualify.
+Two of its three criterion-4 projections follow that. One does not.
+
+```{r fsm-open-check}
+fo$check %>%
+  transmute(School = school, `2026` = y2026, `2027 projected` = y2027,
+            `Implied share` = sprintf("%.0f%%", 100 * implied_share),
+            `Expected at 56%` = expected_at_56,
+            `Follows stated basis` = if_else(consistent, "yes", "no")) %>%
+  tbl(caption = "Criterion 4 projections against the council's own 56% basis")
+```
+
+Blatchington Mill falls from 45 to 25, exactly 56%. Dorothy Stringer falls from
+35 to 22, near enough. **Varndean rises, from 61 to 64** — where the council's
+own basis would give about `r fo$check$expected_at_56[fo$check$school == "Varndean School"]`.
+
+Criteria 4, 5 and 6 all outrank criterion 7, so a discrepancy of this size
+directly affects how many places remain for in-catchment children at what the
+council's own figures make the most oversubscribed school in the city. It may
+have an explanation; it is not one the published material gives, and it is
+worth asking about.
+
+::: {.callout-note}
+## What this cannot say
+
+Whether the contraction helps or harms any particular school depends on where
+the children losing the priority live, which published data does not record.
+The direction is arguable either way: the criterion carries eligible children
+*away* from their catchment towards the popular central schools, so withdrawing
+it should return some of them — but to which schools, and in what numbers, is
+exactly the origin–destination question @sec-wj identifies as the central gap.
+
+What is not in doubt is the timing. The protection shrinks by nearly half in
+the same admissions round as the sibling and open-admission changes, and the
+council confirms it has not modelled the combined effect.
+:::
+
 # Do all families choose the same way? {#sec-heterogeneity-open}
 
 ::: {.callout-note}
@@ -2224,110 +2328,6 @@ This is why the levers in the rest of this report do not reach Hove Park. Catchm
 :::
 
 Eleven schools is eleven observations, and attractiveness, attainment and intake are entangled. The claim worth defending is the ordering one: families' revealed ordering matches raw attainment far more closely than it matches the intake-adjusted contribution, and Hove Park is among the schools where those two orderings diverge most.
-
-# The free school meals priority {#sec-fsm-open}
-
-Brighton & Hove has introduced a free school meals priority into its secondary
-oversubscription criteria, and placed it **above catchment residence**:
-
-| | Criterion |
-|---|---|
-| 3 | Sibling link |
-| 4 | Children in catchment eligible for FSM, up to the city average |
-| 5 | Other children eligible for FSM, up to the city average |
-| 6 | Open admissions (5% quota) |
-| 7 | Children in catchment |
-| 8 | Other children |
-
-Criteria 4 and 5 lift an eligible child above every catchment resident.
-Criterion 5 is the redistributive one: it places a child at a school they do
-not live near, ahead of children who do.
-
-Everything in this section is published. The adjudicator required the council
-to set out both its 2026 outturn by criterion and its own 2027 projection, so
-the effect can be read off the council's arithmetic rather than modelled.
-
-```{r fsm-open-city}
-fo <- readRDS(file.path(PUBLIC_OUT, "fsm_criterion_open.rds"))
-
-fo$city %>%
-  transmute(Criterion = criterion, Offers = offers,
-            `Share of offers` = sprintf("%.1f%%", share)) %>%
-  tbl(caption = "City-wide offers by oversubscription criterion, 2026")
-```
-
-```{r fsm-open-proj}
-fo$projection %>%
-  transmute(School = school, Criterion = criterion,
-            `2026 outturn` = y2026, `2027 projected` = y2027,
-            Change = change) %>%
-  tbl(caption = paste0("The three schools the council expects to be oversubscribed. Source: ",
-                       fo$source, "."))
-```
-
-Across those three schools the FSM criteria account for `r fo$fsm_2026` places
-in 2026, falling to `r fo$fsm_2027` projected for 2027 — a drop of
-`r sprintf("%.0f%%", 100 * (1 - fo$fsm_2027 / fo$fsm_2026))`.
-
-::: {.callout-important}
-## The priority is being cut by nearly half
-
-Eligibility is being narrowed to **Targeted FSM**. The council states that
-approximately **`r sprintf("%.0f%%", 100 * fo$targeted_share)` of currently
-FSM-eligible pupils will qualify**, and that it "is anticipating a decrease of
-`r sprintf("%.0f%%", 100 * fo$stated_decrease)` in pupils eligible for the FSM
-admissions priority".
-
-This matters beyond the criterion itself. The council's equalities case for the
-wider admissions changes rests on the proposition that displacement is
-"unlikely to include children eligible for free school meals as these pupils
-have a higher priority which sits above children living in the school's
-catchment area" — a protection being substantially withdrawn in the same year,
-with no further modelling completed.
-
-Where those children fall to is set by the order above. In-catchment losers
-drop to criterion 7. Out-of-catchment losers drop to criterion 8, below every
-catchment child, or into competition for the 5% open quota.
-:::
-
-## An arithmetic check worth making
-
-The council's stated basis is that 56% of currently eligible pupils qualify.
-Two of its three criterion-4 projections follow that. One does not.
-
-```{r fsm-open-check}
-fo$check %>%
-  transmute(School = school, `2026` = y2026, `2027 projected` = y2027,
-            `Implied share` = sprintf("%.0f%%", 100 * implied_share),
-            `Expected at 56%` = expected_at_56,
-            `Follows stated basis` = if_else(consistent, "yes", "no")) %>%
-  tbl(caption = "Criterion 4 projections against the council's own 56% basis")
-```
-
-Blatchington Mill falls from 45 to 25, exactly 56%. Dorothy Stringer falls from
-35 to 22, near enough. **Varndean rises, from 61 to 64** — where the council's
-own basis would give about `r fo$check$expected_at_56[fo$check$school == "Varndean School"]`.
-
-Criteria 4, 5 and 6 all outrank criterion 7, so a discrepancy of this size
-directly affects how many places remain for in-catchment children at what the
-council's own figures make the most oversubscribed school in the city. It may
-have an explanation; it is not one the published material gives, and it is
-worth asking about.
-
-::: {.callout-note}
-## What this cannot say
-
-Whether the contraction helps or harms any particular school depends on where
-the children losing the priority live, which published data does not record.
-The direction is arguable either way: the criterion carries eligible children
-*away* from their catchment towards the popular central schools, so withdrawing
-it should return some of them — but to which schools, and in what numbers, is
-exactly the origin–destination question @sec-wj identifies as the central gap.
-
-What is not in doubt is the timing. The protection shrinks by nearly half in
-the same admissions round as the sibling and open-admission changes, and the
-council confirms it has not modelled the combined effect.
-:::
 
 # What if other schools shrink too? {#sec-pan-open}
 
