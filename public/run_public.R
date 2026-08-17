@@ -18,6 +18,7 @@ steps <- c(
   "public/R/01a_factsheet_panel.R",      # 16 years of published factsheets
   "public/R/01_open_inputs.R",           # zones, costs, attractiveness
   "public/R/00c_network_maps.R",         # the routing network, for the method section
+  "public/R/00d_route_geometries.R",     # routed worked journeys (needs r5r)
   "public/R/01b_reception_cohort.R",     # Year 7 projected from Reception offers
   "public/R/01d_adjudicator.R",          # published evidence from the determination
   "public/R/01c_identification_test.R",  # what the preference ranks can pin down

@@ -309,17 +309,34 @@ range rather than discarded as implausible.
 
 ## Where the journey times come from {#sec-network}
 
-Every journey time here is routed by `r5r` over an OpenStreetMap street network and a GTFS bus timetable, rather than measured as straight-line distance. Those two inputs do a great deal of the work, so they are worth showing.
+Every journey time here is routed by `r5r` over an OpenStreetMap street network and a GTFS bus timetable, rather than measured as straight-line distance. Those two inputs do a great deal of the work, so they are worth showing - not as an undifferentiated tangle of every service pattern in the city, but as the journeys themselves, leg by leg.
 
 ```{r net-map}
-#| fig-cap: "The bus network the model routes over. Grey lines are service patterns from the GTFS feed; points are stops. The eastern corridor to Peacehaven, Newhaven and Seaford is what the rebuilt network added."
+#| fig-cap: "Seven worked journeys, routed leg by leg. Orange is walking and follows the street network; blue is a bus leg and follows the service pattern. Toggle the full bus network on for context. Hover a leg for its mode, service and duration."
 
 nm <- readRDS(file.path(PUBLIC_OUT, "network_maps.rds"))
+rg_path <- file.path(PUBLIC_OUT, "route_geometries.rds")
+rg <- if (file.exists(rg_path)) readRDS(rg_path) else NULL
 
-leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = nm$routes, color = "#555555", weight = 1, opacity = 0.35,
-               group = "Bus routes") %>%
+m <- leaflet() %>% addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolylines(data = nm$routes, color = "#999999", weight = 1, opacity = 0.25,
+               group = "Whole bus network")
+
+if (!is.null(rg)) {
+  wk <- rg$legs %>% filter(leg_mode == "WALK")
+  bs <- rg$legs %>% filter(leg_mode != "WALK")
+  m <- m %>%
+    addPolylines(data = bs, color = "#2C6E9B", weight = 5, opacity = 0.85,
+                 label = ~paste0(journey, " — bus ", route, ", ",
+                                 round(minutes), " min"),
+                 group = "Worked journeys") %>%
+    addPolylines(data = wk, color = "#d95f02", weight = 4, opacity = 0.9,
+                 dashArray = "4,6",
+                 label = ~paste0(journey, " — walk, ", round(minutes), " min"),
+                 group = "Worked journeys")
+}
+
+m %>%
   addCircleMarkers(data = nm$stops, radius = 1.5, color = "#2C6E9B",
                    stroke = FALSE, fillOpacity = 0.5,
                    label = ~stop_name, group = "Bus stops") %>%
@@ -329,9 +346,19 @@ leaflet() %>%
                    radius = 5, color = "black", weight = 1,
                    fillColor = "#d95f02", fillOpacity = 0.9,
                    label = ~name, group = "Schools") %>%
-  addLayersControl(overlayGroups = c("Bus routes", "Bus stops", "Schools"),
+  addLayersControl(overlayGroups = c("Worked journeys", "Whole bus network",
+                                     "Bus stops", "Schools"),
                    options = layersControlOptions(collapsed = FALSE)) %>%
-  hideGroup("Bus stops")
+  hideGroup(c("Bus stops", "Whole bus network"))
+```
+
+```{r net-journey-table}
+if (!is.null(rg)) {
+  rg$summary %>%
+    transmute(Journey = journey, `Minutes` = total_minutes,
+              Legs = legs, `Bus services` = services) %>%
+    tbl(caption = "The same journeys as numbers. Each is routed door to door on a full-timetable weekday morning.")
+}
 ```
 
 The feed carries **`r fmt(nm$n_stops)` stops on `r nm$n_routes` routes**, and the network was built from a merged East and West Sussex OpenStreetMap extract covering `r paste(nm$meta$outcodes, collapse = ", ")` — `r fmt(nm$meta$n_origins)` origin postcodes in all.
@@ -907,7 +934,23 @@ Across three admissions rounds, **359 children from Longhill's own catchment wer
 
 A school that admits substantially more children than choose it is not rationing places, and a school that is not rationing places cannot be conferring an advantage through catchment priority. **On the council's own evidence, being in Longhill's catchment does not appear to secure anything that being outside it would not.** That is the conclusion the modelling above could only assume, and it now rests on the authority's own submission rather than on a parameter sweep.
 
-It also means the redraw can only work through the preference channel — by changing which school families *name* — which is a slower and much weaker mechanism than the priority channel it is often assumed to operate through.
+It also means the redraw can only work through the preference channel — by changing which school families *name*.
+
+::: {.callout-note}
+## Two different things a catchment can do, and only one of them is in the Admissions Code
+
+It is worth separating the mechanisms, because they are routinely run together and the evidence bears on them very differently.
+
+**The procedural mechanism** is what the arrangement actually specifies: living in a catchment gives priority when a school has to choose between applicants. That one is measurable, and at Longhill the figures above show it doing nothing, because there is no choosing to be done.
+
+**The normative mechanism** is the assumption that being placed in a catchment makes a family treat that school as *theirs* — you are in the catchment, therefore that is your catchment school, therefore it goes on the form. Nothing in the Admissions Code creates this. It is a claim about how families read a map, and it is doing a great deal of unexamined work in the case for redrawing.
+
+The two are easy to conflate because they usually point the same way. Where they can be separated, the normative claim looks weaker than it is assumed to be. Families in Whitehawk moved *out* of Longhill's catchment appear to have gone on naming it in meaningful numbers — plausibly through sibling links, the free bus, simple inertia, or a sense of the school as the local one that a boundary revision does not dislodge. Meanwhile Kemptown, moved *in*, was not obviously converted by the change.
+
+If catchment membership were the psychological anchor the argument requires, neither pattern should hold. **A redraw that assumes families will follow the map, when the map has just moved and they did not, is relying on a mechanism the evidence does not obviously support** — and it is the mechanism, not the priority, that the case for redrawing Longhill's catchment mostly rests on.
+
+Testing this properly needs first preferences by small area across the boundary change, which the council holds. It is a contained question with a direct bearing on whether a redraw would work at all.
+:::
 
 ### Which schools actually ration places
 
