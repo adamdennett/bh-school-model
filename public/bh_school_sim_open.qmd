@@ -1605,7 +1605,12 @@ PAN_LADDER <- c(270, 240, 210, 180, 150, 120)
 fill_open <- env$envelope %>%
   filter(site == "now") %>%
   group_by(entry_year) %>%
-  summarise(intake = median(natural_intake), .groups = "drop") %>%
+  # The lower quartile rather than the median. Every open specification
+  # shares the same blind spot — none can see how strongly families avoid
+  # a school — so they err in the same direction rather than scattering
+  # either side of the truth. A central tendency across four specifications
+  # biased the same way is still biased.
+  summarise(intake = quantile(natural_intake, 0.25), .groups = "drop") %>%
   tidyr::crossing(pan = PAN_LADDER) %>%
   mutate(fill = intake / pan,
          lab  = paste0(round(100 * pmin(fill, 1)), "%"))
@@ -1618,11 +1623,13 @@ fill_open %>%
   scale_fill_gradient2(low = "#d73027", mid = "#fee08b", high = "#1a9850",
                        midpoint = 0.72, limits = c(0.25, 1.05), guide = "none") +
   labs(title = "Longhill's modelled fill rate at each admission number",
-       subtitle = "Median across the parameter sweep, current site, option Z catchments",
+       subtitle = "Lower quartile of the parameter sweep, current site, option Z catchments",
        x = "Year 7 entry year", y = "Published Admission Number")
 ```
 
 This is the same figure, on the same axes and the same colour scale, as the one in the record-calibrated analysis — so the two can be compared directly rather than by translation. **The caution below is about the levels, not the construction.**
+
+It reads the **lower quartile** of the sweep rather than the median, for the reason set out in @sec-envelope: all four attractiveness specifications share the same blind spot, so they err in the same direction rather than scattering either side of the truth, and a central tendency across four specifications biased the same way is still biased. On the median every admission number of 180 and below reads 100% in every year, which is not a finding but an artefact of that bias. The quartile at least distinguishes between the options, which is what the figure is for.
 
 The second view answers a different question, and it is the one published data is better placed to answer: not how full the school gets under one set of assumptions, but how often it reaches its number across *every* assumption in the sweep.
 
