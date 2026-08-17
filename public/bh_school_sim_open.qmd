@@ -2211,6 +2211,20 @@ in this model — not a small amount, exactly zero. That is not a finding about
 Brighton. It is a failure of the open model, and the diagnosis is visible in
 the capacity table.
 
+**The calibrated model finds the opposite, and it is one of the larger
+divergences in this document.** On records, cutting Cardinal Newman to 270
+sends Longhill **+29 children** in 2026; Newman 270 together with Dorothy
+Stringer 270 sends **+55**; adding BACA at 150 sends **+72**. Against Longhill's
+calibrated 2026 baseline of about 114, that last figure is a **63% increase** —
+the single most effective lever tested anywhere in either report, and larger
+than relocation and redrawing combined.
+
+So this section understates a real mechanism to zero. If the cascade matters
+as much as the records suggest, the size of *other* schools is a more powerful
+instrument for Longhill than anything done to Longhill itself — which, if true,
+reframes the policy question substantially. **Published data cannot establish
+it, and this report should not be read as evidence against it.**
+
 ```{r pan-open-slack}
 po$slack %>%
   transmute(School = name, PAN = pan, Intake = round(intake),
