@@ -1010,6 +1010,18 @@ It needs a calibrated model, which needs records (@sec-calibration-open). With o
 That comparison is the honest test of whether "improve the school" is a viable alternative to changing its size or location. This report cannot make it.
 :::
 
+# Moving Longhill {#sec-moving-open}
+
+Longhill sits at Ovingdean, in the far south-east corner of the city, and is reachable from most of Brighton only by a long bus ride. The relocation site modelled throughout this document is the top of Elm Grove, on the Race Hill ridge — central, on a main corridor, and much better served by buses than the average Brighton secondary, as @sec-network shows.
+
+Two things about that comparison are worth stating before any of the scenario results are read.
+
+**The move is modelled as a change of location and nothing else.** The school keeps its name, its staff, its intake characteristics and — critically — its revealed attractiveness. Every relocation figure in this report is therefore an estimate of what *geography alone* would buy. If a new building on a better site also changed how families regard the school, the effect would be larger; if the school's reputation travelled with it unchanged, smaller. Published data cannot separate those, and the model does not try.
+
+**The journey times for the new site are routed, not assumed.** An earlier version of this analysis had no routed times for Elm Grove and gave it the average accessibility of a Brighton secondary. That was badly wrong in a consequential direction: rebuilding the network over a merged East and West Sussex extract, and changing nothing else, moved the relocation effect from roughly −4 children to about +58 in 2026. The site is genuinely well connected, and the approximation had been hiding it. The correction is described in full at @sec-envelope.
+
+What relocation does to Longhill's recruitment, on its own and combined with a redraw or a smaller admission number, is the subject of @sec-design-open.
+
 # A shrinking cohort
 
 ```{r demand-2035}
