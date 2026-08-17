@@ -2327,6 +2327,32 @@ level it carries no disclosure risk, and it would replace the widest band of
 uncertainty here with a measurement.
 :::
 
+::: {.callout-caution}
+## The envelope contains the calibrated answer — at its very bottom edge
+
+This is the most important thing to know about every range quoted in this
+document, and it only becomes visible by comparing against a calibrated model.
+
+At the current site in 2035, the sweep spans **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` to `r round(max(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` children, with a median of `r round(median(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`.** The calibrated model puts it at about **79** — essentially the floor of the range, not the middle.
+
+The sweep is doing its job: it brackets the truth, which is the point of
+sweeping rather than guessing. But a reader naturally treats the centre of a
+range as the best estimate, and here that would be wrong by a factor of two
+and a half.
+
+The reason is visible in the table above. The **attractiveness specification
+accounts for `r round(env$importance$pct[env$importance$term == "w_spec"], 1)`% of the variation** — far more than distance decay or catchment
+priority — and none of the four open specifications capture how strongly
+families avoid Longhill, because published data does not record avoidance. The
+calibrated parameters themselves sit inside the swept ranges but near their
+edges: distance decay `r sprintf("%.2f", 1.619)` against a sweep of
+`r min(env$betas)`–`r max(env$betas)`, catchment priority `r sprintf("%.2f", 2.101)` against `r min(env$gammas)`–`r max(env$gammas)`.
+
+**Read the lower bound of every envelope in this document as the operative
+figure, not the median.** Where a range is quoted, the calibrated evidence
+points at its pessimistic end.
+:::
+
 # What this shows, and what it does not
 
 **What holds without any modelling assumption at all**
