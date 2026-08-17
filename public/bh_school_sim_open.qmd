@@ -1492,7 +1492,15 @@ Set that against @sec-single-open, where Hove Park's own catchment geography is 
 
 It is structurally the same problem as Longhill's, and harder. Longhill's levers are catchment, size and site. Hove Park's competitor has no catchment, admits on criteria the council does not set, and cannot be reached by any instrument used elsewhere in this report.
 
-Establishing cause rather than coincidence needs the preference orderings: whether families naming King's first named Hove Park second, and how that changed as King's grew. That analysis has not been done, and it should be, **before any further expansion is agreed rather than after.**
+**That analysis has now been done on the records, and it revises the hypothesis.** Families naming King's first turn overwhelmingly to Blatchington Mill (39%) and Cardinal Newman (38%) as their second choice — the other well-regarded school and the other faith school. Hove Park is the second choice of only **12%** of them, down from 23% three rounds earlier. Meanwhile King's is named second by 23% of Hove Park's *own* first-preference families, up from 16%.
+
+So King's is not taking families who would otherwise have filled Hove Park. It competes with Blatchington Mill and Cardinal Newman. What the data shows instead is that **Hove Park is dropping out of choice sets** — families who want King's no longer hold it in reserve, while families who want Hove Park increasingly hold King's in reserve.
+
+That is a harder problem than competition for a fixed pool. Constraining King's would not return those families, because they are not moving between those two schools; they would go to Blatchington Mill, already the dominant second choice for both groups. And it means Hove Park's more deprived intake is a **residual** — what remains after three other institutions have been chosen from across the same catchment — rather than the result of King's skimming its queue.
+
+The policy implication follows: capping King's would not fix Hove Park. The question that matters is why Hove Park is falling out of choice sets across its own catchment, and that is about the school and how it is regarded rather than about admissions arithmetic. No catchment redesign reaches it.
+
+Two limits. The records cover three rounds (2023-24 to 2025-26) while King's grew mainly between 2014 and 2020, so this shows the pattern *now*, not what happened during the expansion. And second preferences are strategic as well as sincere — some of Hove Park's decline as a second choice may be families correctly judging they will be offered it regardless.
 :::
 
 # What the 2024 redraw did {#sec-redraw}
