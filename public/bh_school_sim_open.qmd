@@ -129,7 +129,7 @@ Three tiers of material sit behind this report, and they are not equivalent.
 
 **It should have been.** Every table in it is aggregated to catchment or school level. None of it is disclosive: there is no individual, no address, and no cell small enough to identify a family. It is exactly the kind of material that lets residents, schools and researchers examine an admissions arrangement on the same evidence the authority uses — and there is no obvious reason it could not sit on the council's website alongside the factsheets that already do. **A recurring theme of this report is that decisions are being argued out on incomplete public evidence; this bundle is a case where the evidence exists, is safe to release, and simply has not been.** Publishing it would cost nothing and would remove a good deal of the uncertainty flagged throughout these pages.
 
-**Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model produces, that modelling rests on record-level data held under separate arrangements. Those figures appear only as reference points against which the open results can be checked, never as findings this report establishes, and no record-level data, derived table or fitted object from that work is included in this repository or its outputs.
+**Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model could produce, that modelling would rest on record-level data that we know the council holds, but that is not in the public domain. At points I may reference where the public data could be enhanced with a record-level model, and I would be happy to assist the council in running such a model should they want to work with me to do so — as an ONS accredited safe researcher, this is something I would be glad to help with while working to publish outputs in a non-disclosive way. No derived tables or fitted objects from record-level data are included in this repository or its outputs.
 
 ## Who wrote this, and why these methods {#sec-provenance}
 
@@ -908,6 +908,33 @@ Across three admissions rounds, **359 children from Longhill's own catchment wer
 A school that admits substantially more children than choose it is not rationing places, and a school that is not rationing places cannot be conferring an advantage through catchment priority. **On the council's own evidence, being in Longhill's catchment does not appear to secure anything that being outside it would not.** That is the conclusion the modelling above could only assume, and it now rests on the authority's own submission rather than on a parameter sweep.
 
 It also means the redraw can only work through the preference channel — by changing which school families *name* — which is a slower and much weaker mechanism than the priority channel it is often assumed to operate through.
+
+### Which schools actually ration places
+
+Item 6 of the same bundle settles it beyond argument. For every school and round it gives on-time preferences at each rank **and, in brackets, how many of those were offered a place** — so the first-preference success rate can be read directly rather than inferred.
+
+```{r adj-conv}
+ac <- readRDS(file.path(PUBLIC_OUT, "adjudicator_conversion.rds"))
+ac$pooled %>%
+  transmute(School = school, `First preferences` = p1_named,
+            Offered = p1_offered, `Turned away` = turned_away,
+            `Success rate` = sprintf("%.0f%%", 100 * p1_rate)) %>%
+  tbl(caption = "First-preference success rate by school, three rounds pooled. Source: BHCC evidence to the Schools Adjudicator, item 6")
+```
+
+The city divides cleanly in two. **Three schools turned away not one first-preference applicant in three years** — Longhill, Brighton Aldridge and Portslade Aldridge. At the other end, King's and Varndean offered places to two-thirds of the families who put them first, and Cardinal Newman to under three-quarters; between them those three schools refused **`r format(sum(ac$pooled$turned_away[ac$pooled$school %in% c("King's School", "Varndean School", "Cardinal Newman Catholic School")]), big.mark = ",")` first preferences** over the period.
+
+::: {.callout-important}
+## Two admissions systems operating under one set of rules
+
+This table does more than confirm the catchment-priority point. It shows that Brighton is running **two different systems simultaneously**, and that most of the consultation argument applies to only one of them.
+
+At the oversubscribed schools, admission criteria decide who gets in. Catchment matters, siblings matter, the random tiebreaker matters, and a redraw genuinely moves children. At **Longhill, BACA and PACA, the criteria never bind at all** — everyone who names the school is admitted, so catchment, siblings and tiebreaker are all inert. Whatever the arrangement says, in practice these schools admit anyone who asks.
+
+That splits the policy question in two. For the oversubscribed half, arguments about fairness of access are substantive and the instruments in the Admissions Code work. **For Longhill, no admissions instrument reaches the problem, because there is no rationing to adjust.** Its intake is determined entirely by how many families name it, which is a question about the school and how it is regarded, not about the arrangement.
+
+Every scenario in this report that works through catchment priority is therefore working on the half of the city where it does nothing.
+:::
 
 If that is right, it changes the policy conclusion entirely. **Redrawing Longhill's catchment cannot work by letting more children in — nobody is being turned away.** It can only work by changing which school families *name*. That is a much weaker and slower mechanism, and any proposal resting on a redraw needs to be honest about which of the two it is relying on.
 
