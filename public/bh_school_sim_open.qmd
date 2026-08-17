@@ -119,6 +119,18 @@ questions:
 3. **What does the 2028 boundary expansion do**, when Brighton & Hove takes in
    East Saltdean, Telscombe and Peacehaven?
 
+## Where the data came from {#sec-data-provenance}
+
+Three tiers of material sit behind this report, and they are not equivalent.
+
+**Published sources** carry everything in the main analysis: ONS population and small-area age structure, the council's allocation factsheets and catchment maps, the Schools Adjudicator's determination of 20 October 2025, DfE performance tables, and journey times routed over OSM and GTFS. All of it is reproducible from this repository.
+
+**Evidence submitted to the Schools Adjudicator.** In determining the objections to the 2026/27 arrangements, the adjudicator required the council to produce a substantial evidence bundle — catchment boundaries, pupil forecasts, indices of deprivation, and preference and allocation counts by catchment area. As one of the objectors I received that bundle from the adjudicator in the ordinary course of the case. It was not published.
+
+**It should have been.** Every table in it is aggregated to catchment or school level. None of it is disclosive: there is no individual, no address, and no cell small enough to identify a family. It is exactly the kind of material that lets residents, schools and researchers examine an admissions arrangement on the same evidence the authority uses — and there is no obvious reason it could not sit on the council's website alongside the factsheets that already do. **A recurring theme of this report is that decisions are being argued out on incomplete public evidence; this bundle is a case where the evidence exists, is safe to release, and simply has not been.** Publishing it would cost nothing and would remove a good deal of the uncertainty flagged throughout these pages.
+
+**Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model produces, that modelling rests on record-level data held under separate arrangements. Those figures appear only as reference points against which the open results can be checked, never as findings this report establishes, and no record-level data, derived table or fitted object from that work is included in this repository or its outputs.
+
 ## Who wrote this, and why these methods {#sec-provenance}
 
 I am Professor of Urban Analytics at UCL's Centre for Advanced Spatial Analysis. Spatial interaction models — the class of model this report is built on — have been a central part of my research for around fifteen years, and I have published on their formulation, calibration and application to population flows.
@@ -152,6 +164,8 @@ It is built entirely from published data, deliberately, so that anyone can check
 - **"This result differs from the calibrated model"** — the analysis *is* here, but the open version and the record-calibrated version disagree. These flags say **which direction the open figure is wrong in, and by roughly how much**, so a reader can discount appropriately rather than take the number at face value.
 
 The second kind matters most. Where this report and the calibrated model diverge, **the open model is almost always the more optimistic of the two about Longhill** — and the flags say so at each point rather than only in a methods appendix.
+
+Those comparison figures are quoted precisely, because a warning that a number is wrong is useless without saying by how much. They come from modelling carried out on data held under separate arrangements, and are given here as reference points rather than as results this document establishes. Nothing in them can be reproduced from this repository; everything else here can.
 
 **What is being asked for is access to the admissions records the council already holds** — preferences, offers, allocation criteria, home postcodes — under the arrangements that already govern research use of pupil data. Nothing new would need collecting. In return, the analysis becomes far sharper: the sections marked below stop being gaps, the largest source of error in this report disappears, and the council gets a tested model of its own system that can be re-run against any proposal before it is consulted on.
 
@@ -2432,6 +2446,16 @@ The council holds individual preference and offer records: for each applicant, t
 Five sections of this report exist only to mark where published data runs out: @sec-calibration-open, @sec-rules-open, @sec-heterogeneity-open, @sec-required-open and @sec-whitehawk-open. Each says what cannot be established here and what the records would establish. They are the shape of the offer.
 
 None of this requires new collection, a survey, or a change of practice. It requires access to records the admissions process produces as a by-product, under the arrangements that already govern research use of pupil data.
+
+## And one thing that needs no arrangements at all
+
+There is a smaller ask that could be met immediately, and it is worth separating from the rest because it involves no personal data and no agreement of any kind.
+
+When the adjudicator determined the 2026/27 objections, the council produced an evidence bundle: catchment boundaries, pupil forecasts, deprivation indices, and **preference and allocation counts by catchment area** — which school each catchment's children named, in what order, and where they were offered places. As set out in @sec-data-provenance, that material reached me as an objector to the case but was never published.
+
+It is aggregated to catchment level throughout. Nothing in it identifies anyone. And it answers several of the questions this report has had to leave open — a catchment-level origin–destination matrix is the very thing @sec-envelope identifies as the largest single source of uncertainty here.
+
+**Publishing that bundle would cost the council nothing and would let every party to this debate argue from the same evidence.** At present the authority, the objectors and the adjudicator have seen it; residents, governors and anyone reading this document have not. For a decision that will shape the city's schools for fifteen years, that asymmetry is hard to justify — and unlike the pupil-record request above, removing it requires no one's permission but the council's own.
 
 ## Why this is worth doing now rather than later
 
