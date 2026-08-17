@@ -1032,27 +1032,38 @@ cp %>%
 #| fig-cap: "Each catchment's Reception cohort carried forward at that catchment's own measured Reception-to-Year-7 ratio (solid) against the council's October 2025 forecast (dashed). Longhill is the catchment where the council's line sits furthest above the cohorts behind it."
 #| fig-height: 6
 
-pj <- bind_rows(
-  rec$by_catchment %>%
-    transmute(catchment, entry_year, n = projected, src = "Aged forward from Reception"),
-  rec$council %>%
-    transmute(catchment = CatchmentGroup, entry_year, n = council,
-              src = "Council forecast, Oct 2025")) %>%
-  filter(entry_year >= 2026, !is.na(n))
+LV <- c("Year 7 offers actually made", "Projected from Reception cohorts",
+        "Council forecast, Oct 2025")
 
-pj %>%
+pj <- bind_rows(
+  rec$observed_by_catchment %>%
+    transmute(catchment, entry_year, n = y7_offers, src = LV[1]),
+  rec$by_catchment %>%
+    filter(entry_year > max(rec$observed_by_catchment$entry_year)) %>%
+    transmute(catchment, entry_year, n = projected, src = LV[2]),
+  rec$council %>%
+    transmute(catchment = CatchmentGroup, entry_year, n = council, src = LV[3])) %>%
+  filter(!is.na(n)) %>%
+  mutate(src = factor(src, levels = LV))
+
+# Join the observed series to the projection so the line is continuous
+# rather than breaking at the handover year.
+bridge <- rec$observed_by_catchment %>%
+  filter(entry_year == max(entry_year)) %>%
+  transmute(catchment, entry_year, n = y7_offers, src = factor(LV[2], levels = LV))
+
+bind_rows(pj, bridge) %>%
   ggplot(aes(entry_year, n, colour = src, linetype = src)) +
-  geom_line(linewidth = 0.9) + geom_point(size = 1.6) +
+  geom_line(linewidth = 0.9) + geom_point(size = 1.5) +
   facet_wrap(~ catchment, ncol = 3, scales = "free_y") +
-  scale_colour_manual(values = c("Aged forward from Reception" = "#1b9e77",
-                                 "Council forecast, Oct 2025"  = "#d95f02")) +
-  scale_linetype_manual(values = c("Aged forward from Reception" = "solid",
-                                   "Council forecast, Oct 2025"  = "dashed")) +
+  scale_colour_manual(values = setNames(c("grey30", "#1b9e77", "#d95f02"), LV)) +
+  scale_linetype_manual(values = setNames(c("solid", "solid", "dashed"), LV)) +
   expand_limits(y = 0) +
-  labs(title = "Where the council's forecast parts company with the children",
-       subtitle = "Year 7 cohort by catchment, at each catchment's own conversion rate",
+  labs(title = "What actually happened, what the cohorts imply, and what the council forecasts",
+       subtitle = "Year 7 offers by catchment. Projection applies each catchment's own measured Reception-to-Year-7 ratio",
        x = "Year 7 entry year", y = "Children", colour = NULL, linetype = NULL) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 2), linetype = guide_legend(nrow = 2))
 ```
 
 The pattern is easier to see as the gap itself — the council's forecast expressed as a percentage of the children the Reception cohorts imply.

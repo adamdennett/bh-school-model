@@ -208,9 +208,21 @@ if (exists("school_locs", envir = lenv)) {
   ix <- as.integer(sf::st_within(pts, cg))
   gap <- is.na(ix)
   if (any(gap)) ix[gap] <- sf::st_nearest_feature(pts[gap, ], cg)
+  # Faith primaries admit city-wide on religious criteria, not on
+  # geography, and their children feed the two faith secondaries rather
+  # than the catchment school they happen to sit inside. Leaving them in
+  # a geographic catchment inflates that catchment's Reception count
+  # without a matching Year 7 count, depressing its ratio. BH_Schools_2
+  # puts them in a seventh "Religious schools" group; same here.
   catch_lookup <- locs %>%
-    mutate(School = School, CatchmentGroup = cg$catchment[ix]) %>%
+    mutate(School = School,
+           CatchmentGroup = if_else(grepl("Catholic Primary", School,
+                                          ignore.case = TRUE),
+                                    "Religious schools", cg$catchment[ix])) %>%
     select(School, CatchmentGroup)
+
+  message("  Faith primaries moved to the Religious schools group: ",
+          sum(catch_lookup$CatchmentGroup == "Religious schools"))
   message("\n  Primary schools placed in a catchment: ", nrow(catch_lookup))
 }
 
@@ -237,10 +249,13 @@ if (!is.null(catch_lookup) &&
   # capping in one empirically observed number, which is what makes it
   # comparable with the council's decomposition.
 
+  sec_map <- bind_rows(
+    purrr::imap_dfr(CATCHMENT_SCHOOLS_OPEN, ~ tibble(name = .x, catchment = .y)),
+    tibble(name = c("King's School", "Cardinal Newman Catholic School"),
+           catchment = "Religious schools"))
+
   sec_by_catch <- fs$factsheets %>%
-    inner_join(purrr::imap_dfr(CATCHMENT_SCHOOLS_OPEN,
-                               ~ tibble(name = .x, catchment = .y)),
-               by = "name") %>%
+    inner_join(sec_map, by = "name") %>%
     group_by(entry_year = year, catchment) %>%
     summarise(y7_offers = sum(off_total, na.rm = TRUE), .groups = "drop")
 
@@ -264,6 +279,10 @@ if (!is.null(catch_lookup) &&
     left_join(ratio_tbl %>% select(catchment, surv_catch), by = "catchment") %>%
     mutate(surv_catch = dplyr::coalesce(surv_catch, surv_recent),
            projected = rec_offers * surv_catch)
+
+  # The observed Year 7 series, so the chart can show what actually
+  # happened alongside what is projected - the original presentation.
+  observed_by_catch <- sec_by_catch
 
   message("\n=== Reception cohorts by secondary catchment, and the Year 7 year they reach ===")
   print(as.data.frame(by_catch %>%
@@ -373,6 +392,7 @@ if (exists("bhcc_forecast", envir = benv)) {
 # ====================================================================
 
 saveRDS(list(
+  observed_by_catchment = if (exists("observed_by_catch")) observed_by_catch else NULL,
   primary_all   = primary_all,
   reception_city = rec_city,
   secondary_city = sec_city,
