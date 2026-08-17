@@ -1441,6 +1441,60 @@ in this document for why the origin–destination data matters: without it, a
 council can pursue a policy for equity reasons and a policy for viability
 reasons without ever discovering that the two work against each other.
 
+# King's, Hove Park, and the other end of the city {#sec-kings-open}
+
+Almost everything in this document concerns Longhill and the east. The published application history contains a second pattern, at the opposite end of the city, which is at least as consequential and has had almost none of the attention.
+
+```{r kings-open-series}
+#| fig-cap: "First preferences for King's School and Hove Park School, from the council's published allocation factsheets. Nothing here is modelled."
+
+kp <- readRDS(file.path(PUBLIC_OUT, "factsheet_panel.rds"))$factsheets %>%
+  filter(grepl("King's|Hove Park", name)) %>%
+  mutate(School = if_else(grepl("King", name), "King's School", "Hove Park School"))
+
+kp %>%
+  ggplot(aes(year, pref1, colour = School, group = School)) +
+  geom_line(linewidth = 1) + geom_point(size = 2.4) +
+  scale_colour_manual(values = c("King's School" = "#7570b3",
+                                 "Hove Park School" = "#d95f02")) +
+  expand_limits(y = 0) +
+  labs(title = "The rise of one school tracks the decline of the other",
+       subtitle = "First preferences, published allocation factsheets",
+       x = "Year 7 entry year", y = "First preferences", colour = NULL) +
+  theme(legend.position = "bottom")
+```
+
+```{r kings-open-corr}
+#| include: false
+kw <- kp %>% select(year, School, pref1, off_total) %>%
+  tidyr::pivot_wider(names_from = School, values_from = c(pref1, off_total))
+kr_pref <- cor(kw[["pref1_King's School"]], kw[["pref1_Hove Park School"]], use = "complete.obs")
+kr_off  <- cor(kw[["off_total_King's School"]], kw[["off_total_Hove Park School"]], use = "complete.obs")
+khp26 <- round(kw[["off_total_Hove Park School"]][kw$year == 2026])
+```
+
+Between 2014 and 2026, King's first preferences rose from 105 to 218 while Hove Park's fell from 181 to 103. Offers moved the same way — King's from 115 to 180, Hove Park from 260 to `r khp26`. **The two series correlate at `r sprintf("%.2f", kr_pref)` on first preferences and `r sprintf("%.2f", kr_off)` on offers.** One school has roughly doubled while the other has roughly halved, over the same twelve years, in the same part of the same city.
+
+That is published data, and it is the whole of what published data can say. The correlation is striking but it is not, by itself, evidence of a mechanism: two schools in the same area with a fixed pool of children will tend to move oppositely whatever the cause, and Hove Park's own circumstances are an equally available explanation.
+
+::: {.callout-note}
+## What the records show, and why it matters for any further expansion
+
+The parallel analysis on individual records adds two facts that published data cannot reach.
+
+**King's is in practice a Hove catchment school.** Around 87% of its intake comes from the Hove Park and Blatchington Mill catchment, and it takes roughly **one in five of all the children living in that catchment**. No other catchment loses more than about 3% of its children to it. It admits on faith criteria and holds no catchment of its own, but its draw is overwhelmingly local.
+
+**It takes the least deprived intake in the city** — about 17% of its children from deprived neighbourhoods, below every other secondary in Brighton & Hove. Hove Park, in the same part of the city, is about 30%.
+
+Set that against @sec-single-open, where Hove Park's own catchment geography is the *least* deprived in the city. The ordering of intakes is the exact inverse of the ordering of the ground the schools stand on. Three institutions draw on the same population; two of them take the less deprived children, and Hove Park takes what is left.
+
+**The question this raises is whether further expansion at King's is compatible with a viable Hove Park in the medium term.** In a shrinking cohort every additional place at King's is drawn from a catchment that is itself getting smaller, and — on the evidence above — disproportionately from the less deprived part of it. That reduces Hove Park's roll and concentrates disadvantage in what remains, at the same time.
+
+It is structurally the same problem as Longhill's, and harder. Longhill's levers are catchment, size and site. Hove Park's competitor has no catchment, admits on criteria the council does not set, and cannot be reached by any instrument used elsewhere in this report.
+
+Establishing cause rather than coincidence needs the preference orderings: whether families naming King's first named Hove Park second, and how that changed as King's grew. That analysis has not been done, and it should be, **before any further expansion is agreed rather than after.**
+:::
+
 # What the 2024 redraw did {#sec-redraw}
 
 Before asking what a new catchment could do, it is worth pricing the one the
