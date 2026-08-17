@@ -1002,6 +1002,54 @@ the school, and a shrinking school raises leakage. It deserves to be stated as
 a judgement and tested, rather than carried through as a parameter.
 :::
 
+### Every catchment, side by side {#sec-catchment-projections}
+
+The comparison above is worth doing for all six catchments rather than Longhill alone, because it shows how far Longhill's treatment stands apart. This replicates the cohort-ageing projection from [*Brighton and Hove allocations*](https://adamdennett.github.io/BH_Schools_2/brighton_and_hove_allocations.html#our-own-projection-cohort-aging-from-primary-allocations), which ages each catchment's Reception offers forward seven years to the Year 7 cohort they become.
+
+```{r catch-proj}
+cp <- rec$by_catchment %>%
+  filter(entry_year %in% c(2026, 2029, 2032)) %>%
+  select(catchment, entry_year, ours = projected) %>%
+  left_join(rec$council %>%
+              transmute(catchment = CatchmentGroup, entry_year, council),
+            by = c("catchment", "entry_year")) %>%
+  filter(!is.na(council))
+
+cp %>%
+  mutate(txt = sprintf("%d / %d", round(ours), round(council))) %>%
+  select(catchment, entry_year, txt) %>%
+  pivot_wider(names_from = entry_year, values_from = txt) %>%
+  rename(Catchment = catchment) %>%
+  tbl(caption = "Children aged forward from Reception offers / the council's own forecast, by catchment and entry year")
+```
+
+```{r catch-proj-fall}
+#| include: false
+fall <- cp %>% group_by(catchment) %>%
+  summarise(ours_pct = 100 * (ours[entry_year == 2032] / ours[entry_year == 2026] - 1),
+            cou_pct  = 100 * (council[entry_year == 2032] / council[entry_year == 2026] - 1),
+            .groups = "drop")
+lh_f <- fall %>% filter(catchment == "Longhill")
+```
+
+::: {.callout-important}
+## The council is not underestimating Longhill's decline. It is asserting it.
+
+It would be natural to expect this comparison to show the council being too optimistic about Longhill. **It does not, and the actual finding is more interesting.**
+
+Between 2026 and 2032 the Longhill catchment's own aged-forward children fall by `r sprintf("%.0f", abs(lh_f$ours_pct))`%. The council's forecast for the same catchment falls by `r sprintf("%.0f", abs(lh_f$cou_pct))`% — **considerably faster than the children behind it**. The difference is almost entirely the 23.89% leakage rate applied to Longhill and to no other catchment at anything like that level.
+
+So the council's forecast arrives at a pessimistic number for Longhill, and arrives there by assumption rather than by modelling behaviour. Three quantities are being conflated in most of this debate and they need separating:
+
+1. **The children in the catchment** — falling steadily, about `r sprintf("%.0f", abs(lh_f$ours_pct))`% over six years. This is demography and it is not in dispute.
+2. **The council's projected Longhill intake** — falling about `r sprintf("%.0f", abs(lh_f$cou_pct))`%, because of the leakage assumption laid on top.
+3. **What a calibrated behavioural model produces** — lower still. On records, Longhill's natural recruitment reaches roughly 79 children by 2035, below where the council's own line is heading.
+
+**The sleepwalking risk is real but it is not where it looks.** The council is not failing to see a decline. It is reaching roughly the right pessimism through a parameter it has not justified, which means it cannot say what would change the answer. An assumption cannot be steered. A behavioural model can be asked what happens if the school moves, shrinks, or becomes more attractive — and this report's whole argument is that those questions have different answers, which the leakage parameter cannot distinguish between.
+
+There is a further trap in using leakage as a planning device, noted above and worth repeating here: a high assumed leakage justifies shrinking the school, and a shrinking school raises leakage.
+:::
+
 ## The assumption is testable, and the adjudicator published the test {#sec-outflow}
 
 When the Office of the Schools Adjudicator determined objections to the 2026/27
