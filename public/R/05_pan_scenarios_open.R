@@ -60,10 +60,18 @@ SCENARIOS <- list(
   "S0. As determined"                       = c(),
   "A. Cardinal Newman 300"                  = setNames(300, CN),
   "B. Cardinal Newman 270"                  = setNames(270, CN),
-  "C. Dorothy Stringer 300"                 = setNames(300, DS),
+  # Aligned with R/12_pan_scenarios.R so the two analyses test an
+  # identical set and can be compared row for row. 270 is the reduction
+  # Dorothy Stringer itself sought and the adjudicator refused for
+  # 2026/27; 300 is the intermediate this bundle previously tested alone.
+  # Both are carried, in both bundles.
+  "C. Dorothy Stringer 270"                 = setNames(270, DS),
   "D. BACA 150"                             = setNames(150, BACA),
-  "E. Newman 270 + Stringer 300"            = c(setNames(270, CN), setNames(300, DS)),
-  "F. Newman 270 + Stringer 300 + BACA 150" =
+  "E. Newman 270 + Stringer 270"            = c(setNames(270, CN), setNames(270, DS)),
+  "F. Newman 270 + Stringer 270 + BACA 150" =
+    c(setNames(270, CN), setNames(270, DS), setNames(150, BACA)),
+  "G. Dorothy Stringer 300"                 = setNames(300, DS),
+  "H. Newman 270 + Stringer 300 + BACA 150" =
     c(setNames(270, CN), setNames(300, DS), setNames(150, BACA))
 )
 
