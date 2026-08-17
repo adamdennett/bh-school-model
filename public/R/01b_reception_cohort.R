@@ -222,8 +222,48 @@ if (!is.null(catch_lookup) &&
                by = "school") %>%
     group_by(cohort_year = year, catchment) %>%
     summarise(rec_offers = sum(offers), .groups = "drop") %>%
-    mutate(entry_year = cohort_year + LAG,
-           projected = rec_offers * surv_recent)
+    mutate(entry_year = cohort_year + LAG)
+
+  # A single city-wide survival rate is the wrong multiplier here. It only
+  # removes the ~10% who leave the state sector between Reception and Year 7,
+  # and says nothing about whether a catchment's children go to that
+  # catchment's own secondaries. Longhill's do so far less than anyone
+  # else's, so a city-wide rate flatters it badly.
+  #
+  # The per-catchment ratio used in BH_Schools_2 is fitted from each
+  # catchment's own history: Year 7 offers made BY that catchment's
+  # secondary schools, over the Reception offers made in that catchment
+  # seven years earlier. It absorbs leakage, cross-catchment flow and PAN
+  # capping in one empirically observed number, which is what makes it
+  # comparable with the council's decomposition.
+
+  sec_by_catch <- fs$factsheets %>%
+    inner_join(purrr::imap_dfr(CATCHMENT_SCHOOLS_OPEN,
+                               ~ tibble(name = .x, catchment = .y)),
+               by = "name") %>%
+    group_by(entry_year = year, catchment) %>%
+    summarise(y7_offers = sum(off_total, na.rm = TRUE), .groups = "drop")
+
+  ratio_tbl <- by_catch %>%
+    inner_join(sec_by_catch, by = c("entry_year", "catchment")) %>%
+    filter(rec_offers > 0, y7_offers > 0) %>%
+    group_by(catchment) %>%
+    summarise(surv_catch = sum(y7_offers) / sum(rec_offers),
+              n_years = n(), .groups = "drop")
+
+  message("\n=== Per-catchment Reception-to-Year-7 ratio, fitted from history ===")
+  print(as.data.frame(ratio_tbl %>%
+    transmute(Catchment = catchment, Ratio = round(surv_catch, 3),
+              `Years fitted` = n_years) %>%
+    arrange(Ratio)), row.names = FALSE)
+  message(sprintf("  City-wide survival for comparison: %.3f", surv_recent))
+  message("  A catchment below the city figure keeps fewer of its own children")
+  message("  than average; above it, the schools recruit from outside.")
+
+  by_catch <- by_catch %>%
+    left_join(ratio_tbl %>% select(catchment, surv_catch), by = "catchment") %>%
+    mutate(surv_catch = dplyr::coalesce(surv_catch, surv_recent),
+           projected = rec_offers * surv_catch)
 
   message("\n=== Reception cohorts by secondary catchment, and the Year 7 year they reach ===")
   print(as.data.frame(by_catch %>%

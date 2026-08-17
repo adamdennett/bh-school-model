@@ -1029,7 +1029,7 @@ cp %>%
 ```
 
 ```{r catch-proj-plot}
-#| fig-cap: "Each catchment's Reception offers aged forward seven years (solid) against the council's October 2025 forecast (dashed). Every catchment's two lines run roughly parallel except Longhill's, which diverge."
+#| fig-cap: "Each catchment's Reception cohort carried forward at that catchment's own measured Reception-to-Year-7 ratio (solid) against the council's October 2025 forecast (dashed). Longhill is the catchment where the council's line sits furthest above the cohorts behind it."
 #| fig-height: 6
 
 pj <- bind_rows(
@@ -1050,7 +1050,7 @@ pj %>%
                                    "Council forecast, Oct 2025"  = "dashed")) +
   expand_limits(y = 0) +
   labs(title = "Where the council's forecast parts company with the children",
-       subtitle = "Year 7 cohort by catchment. Longhill is the only catchment where the two diverge",
+       subtitle = "Year 7 cohort by catchment, at each catchment's own conversion rate",
        x = "Year 7 entry year", y = "Children", colour = NULL, linetype = NULL) +
   theme(legend.position = "bottom")
 ```
@@ -1058,7 +1058,7 @@ pj %>%
 The pattern is easier to see as the gap itself — the council's forecast expressed as a percentage of the children the Reception cohorts imply.
 
 ```{r catch-proj-gap}
-#| fig-cap: "The council's forecast as a share of the aged-forward Reception cohort. A catchment sitting near 100% is being forecast in line with its own children; Longhill is not."
+#| fig-cap: "The council's forecast as a share of the cohort implied by each catchment's own conversion rate. Above 100% means the council is forecasting more children than the primary cohorts support."
 
 gap <- rec$by_catchment %>%
   select(catchment, entry_year, ours = projected) %>%
@@ -1081,8 +1081,8 @@ gap %>%
     nudge_x = 0.3, segment.colour = "grey80", show.legend = FALSE) +
   scale_x_continuous(limits = c(2026, 2034)) +
   expand_limits(y = 0) +
-  labs(title = "Longhill is the only catchment forecast below its own children",
-       subtitle = "Council forecast as a percentage of the aged-forward Reception cohort",
+  labs(title = "Where the council forecasts more than the primary cohorts support",
+       subtitle = "Council forecast as a percentage of the cohort-implied figure",
        x = "Year 7 entry year", y = "Council forecast as % of cohort", colour = NULL) +
   theme(legend.position = "bottom")
 ```
@@ -1097,21 +1097,26 @@ lh_f <- fall %>% filter(catchment == "Longhill")
 ```
 
 ::: {.callout-important}
-## The council is not underestimating Longhill's decline. It is asserting it.
+## The council's forecast is above what Longhill's own primary cohorts support, in every year
 
-It would be natural to expect this comparison to show the council being too optimistic about Longhill. **It does not, and the actual finding is more interesting.**
+The ratio matters more than the raw cohort here, and it is measured rather than assumed. For each catchment it is the Year 7 offers made *by that catchment's own secondaries*, over the Reception offers made in that catchment seven years earlier — so it absorbs leakage, cross-catchment movement and capacity limits in one observed number.
 
-Between 2026 and 2032 the Longhill catchment's own aged-forward children fall by `r sprintf("%.0f", abs(lh_f$ours_pct))`%. The council's forecast for the same catchment falls by `r sprintf("%.0f", abs(lh_f$cou_pct))`% — **considerably faster than the children behind it**. The difference is almost entirely the 23.89% leakage rate applied to Longhill and to no other catchment at anything like that level.
+```{r catch-ratio}
+rec$by_catchment %>% distinct(catchment, surv_catch) %>%
+  transmute(Catchment = catchment, `Reception-to-Year-7 ratio` = round(surv_catch, 3)) %>%
+  arrange(`Reception-to-Year-7 ratio`) %>%
+  tbl(caption = "Share of each catchment's Reception cohort that reaches that catchment's own secondary schools")
+```
 
-So the council's forecast arrives at a pessimistic number for Longhill, and arrives there by assumption rather than by modelling behaviour. Three quantities are being conflated in most of this debate and they need separating:
+**Longhill retains `r sprintf("%.0f", 100 * unique(rec$by_catchment$surv_catch[rec$by_catchment$catchment == "Longhill"]))`% of its Reception children — the lowest in the city, against a city-wide figure of `r sprintf("%.0f", 100 * rec$survival_recent)`%.** Fewer than half the children starting primary school in the Longhill catchment take a Year 7 place at Longhill. Brighton Aldridge, at the other extreme, recruits more than its own catchment produces.
 
-1. **The children in the catchment** — falling steadily, about `r sprintf("%.0f", abs(lh_f$ours_pct))`% over six years. This is demography and it is not in dispute.
-2. **The council's projected Longhill intake** — falling about `r sprintf("%.0f", abs(lh_f$cou_pct))`%, because of the leakage assumption laid on top.
-3. **What a calibrated behavioural model produces** — lower still. On records, Longhill's natural recruitment reaches roughly 79 children by 2035, below where the council's own line is heading.
+Apply each catchment's own ratio and the council's forecast for Longhill sits **above** what the primary cohorts support, in every projected year: `r round(cp$council[cp$catchment == "Longhill" & cp$entry_year == 2026])` against `r round(cp$ours[cp$catchment == "Longhill" & cp$entry_year == 2026])` in 2026, and `r round(cp$council[cp$catchment == "Longhill" & cp$entry_year == 2032])` against `r round(cp$ours[cp$catchment == "Longhill" & cp$entry_year == 2032])` in 2032. No other catchment shows a gap of that kind.
 
-**The sleepwalking risk is real but it is not where it looks.** The council is not failing to see a decline. It is reaching roughly the right pessimism through a parameter it has not justified, which means it cannot say what would change the answer. An assumption cannot be steered. A behavioural model can be asked what happens if the school moves, shrinks, or becomes more attractive — and this report's whole argument is that those questions have different answers, which the leakage parameter cannot distinguish between.
+**This is where the sleepwalking risk actually sits.** The council's forecast already looks pessimistic about Longhill relative to other catchments, and it is *still* not pessimistic enough. Its 23.89% leakage deduction is applied to a cohort figure that assumes Longhill converts its catchment at something like the city-wide rate. It does not, and has not for at least six years.
 
-There is a further trap in using leakage as a planning device, noted above and worth repeating here: a high assumed leakage justifies shrinking the school, and a shrinking school raises leakage.
+The calibrated behavioural model reaches the same place independently and goes further: around 79 children by 2035, below both lines above.
+
+Two consequences follow. First, decisions about Longhill's admission number are being taken against a demand figure that the school's own primary catchment does not support. Second, using leakage as the sole adjustment is self-reinforcing as a planning device — a high assumed leakage justifies shrinking the school, and a shrinking school raises leakage — while never asking the question that matters, which is *what would change the conversion rate*.
 :::
 
 ## The assumption is testable, and the adjudicator published the test {#sec-outflow}
