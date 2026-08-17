@@ -161,7 +161,7 @@ It is built entirely from published data, deliberately, so that anyone can check
 **Two kinds of flag appear throughout, and they mean different things:**
 
 - **"This section cannot be done on published data"** — the analysis is absent entirely. Five sections are placeholders of this kind, saying what the records would establish.
-- **"This result differs from the calibrated model"** — the analysis *is* here, but the open version and the record-calibrated version disagree. These flags say **which direction the open figure is wrong in, and by roughly how much**, so a reader can discount appropriately rather than take the number at face value.
+- **"This result is likely to differ from the calibrated model"** — the analysis *is* here, but the open version and the record-calibrated version disagree. These flags say **which direction the open figure is wrong in, and by roughly how much**, so a reader can discount appropriately rather than take the number at face value.
 
 The second kind matters most. Where this report and the calibrated model diverge, **the open model is almost always the more optimistic of the two about Longhill** — and the flags say so at each point rather than only in a methods appendix.
 
@@ -1665,7 +1665,7 @@ has to accept. Across the **entire** parameter sweep:
 parameterisations.**
 
 ::: {.callout-caution}
-## This result differs from the calibrated model — and the difference changes the recommendation
+## This result is likely to differ from the calibrated model — and the difference changes the recommendation
 
 **Read the chart above carefully: it does not show fill rates.** Each cell is
 the share of model *runs* in which Longhill reaches 90% of its number — a
@@ -1692,6 +1692,20 @@ problem.
 The alternative is that the open model is closer to right and the school
 genuinely does support five forms of entry. Nothing in published data
 distinguishes those two futures, and they imply completely different decisions.
+
+**Recommendation: this analysis should be re-run on the council's admissions
+records before any decision is taken on Longhill's admission number.** The
+question in front of the council is not a fine judgement between adjacent
+options. It is whether a school supports three forms of entry or five, and this
+document cannot answer it — not because the method is inadequate, but because
+the one input that would settle it is held by the authority and not published.
+
+The work required is small. The records already exist; no new collection, no
+survey, no change of practice is needed. Fitting the model to observed flows is
+a day's work for someone who has done it before, and it converts every band in
+this section into a number. **A decision of this consequence should not be taken
+against a figure that could plausibly be wrong by a factor of two, when the data
+that would fix it is sitting in the admissions system.**
 
 Both the metric and the over-prediction described in @sec-envelope push in the
 same direction here, which is why the gap is so wide. **What survives is the
@@ -1775,13 +1789,15 @@ origin–destination matrix of preferences by area would settle it immediately.
 # Shrink, move, or redraw?
 
 ::: {.callout-caution}
-## This result differs from the calibrated model
+## This result is likely to differ from the calibrated model
 
 The fill rates below inherit the over-prediction described under the chart in this section: because the open model recruits roughly twice as many children to Longhill as the records support, **every fill rate here is too high**, and the PAN at which the school appears viable is correspondingly too large.
 
 **How much too high is the open question.** If the over-prediction runs at the factor the envelope's own lower bound implies, configuration A would land somewhere near 40% by 2035 rather than anything approaching viable, and only the smallest configuration — Elm Grove at PAN 120 with redrawn catchments — would hold above 80% across the window. On the figures printed here several configurations look survivable at PAN 150; on that reading they would not be.
 
 What survives either reading is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order with confidence; treat the levels as an upper bound.
+
+**Recommendation: the council should have these configurations re-run against its own records before committing to any of them.** The rank order here is reliable enough to shortlist with. The levels are not reliable enough to choose with — and choosing is what the next admissions round requires. A configuration that looks survivable on these figures and is not on the records would commit the city to a school size that fails within a decade, and the difference between those two readings is one dataset the authority already holds.
 :::
 
 ```{r cfg-table}
@@ -1881,7 +1897,86 @@ The direction of the correction is solid; the magnitude is not.
 
 The configurations above take the catchment map as given. A companion exercise, `public/R/08_catchment_design_open.R`, designs it instead, which matters because Peacehaven Community School joins the city's arrangements and its catchment has to be drawn from scratch rather than inherited.
 
-Assigning each neighbourhood to its nearest school gives a Voronoi diagram, which ignores capacity — the popular central schools would be handed far more children than they have places for. Adding the capacity constraint turns this into optimal transport. Give each catchment a scalar *price*, assign every neighbourhood to whichever minimises **journey time + price**, then raise the price of oversubscribed catchments and lower it for undersubscribed ones until each holds the right number of children. The result is an additively weighted Voronoi diagram, or *power diagram*: it minimises total travel time subject to every catchment being the right size, and its regions are contiguous, so the output is a map rather than a scatter of fragments. Every input is published — LSOA child counts, admission numbers from the adjudicator's determination, and the same routed journey times used throughout this document.
+```{r cd-open-map}
+#| fig-cap: "Designed catchments, from published inputs only. Each point is a neighbourhood, coloured by the catchment the optimisation assigns it to; hollow rings mark neighbourhoods that change catchment relative to the current map. Toggle between Longhill at Ovingdean and at Elm Grove."
+
+ocd <- readRDS(file.path(PUBLIC_OUT, "catchment_design_open.rds"))
+
+des_all <- purrr::imap_dfr(
+  list(Ovingdean = "now_210", `Elm Grove` = "elm_210"),
+  ~ ocd$designs[[.x]]$assignment_repaired %>%
+      left_join(ocd$zones, by = "zone") %>%
+      left_join(inp$zones %>% distinct(zone, .keep_all = TRUE) %>%
+                  select(zone, current = catch_optionZ), by = "zone") %>%
+      mutate(site = .y, changed = catchment != current))
+
+cd_names <- sort(unique(des_all$catchment))
+pal_cdo <- colorFactor(
+  colorRampPalette(RColorBrewer::brewer.pal(7, "Set2"))(length(cd_names)),
+  domain = cd_names)
+
+mcd <- leaflet() %>% addProviderTiles(providers$CartoDB.Positron)
+
+for (s in c("Ovingdean", "Elm Grove")) {
+  d <- des_all %>% filter(site == s)
+  sf_d <- st_as_sf(d, coords = c("zone_e", "zone_n"), crs = 27700) %>%
+    st_transform(4326)
+  mcd <- mcd %>%
+    addCircleMarkers(data = sf_d, radius = 6, fillColor = ~pal_cdo(catchment),
+                     fillOpacity = 0.85, color = "white", weight = 1,
+                     label = ~paste0(zone, ": ", catchment),
+                     popup = ~paste0("<b>", zone, "</b><br>Designed: ", catchment,
+                                     "<br>Today: ", current),
+                     group = paste("Longhill at", s)) %>%
+    addCircleMarkers(data = sf_d %>% filter(changed), radius = 9,
+                     fill = FALSE, color = "black", weight = 2,
+                     label = ~paste0("Changes: ", current, " to ", catchment),
+                     group = paste("Longhill at", s))
+}
+
+mcd %>%
+  addCircleMarkers(data = st_transform(
+                     st_as_sf(inp$schools, coords = c("easting", "northing"),
+                              crs = 27700), 4326),
+                   radius = 5, color = "black", weight = 1,
+                   fillColor = "white", fillOpacity = 1, label = ~name) %>%
+  addLegend("bottomright", pal = pal_cdo, values = cd_names,
+            title = "Designed catchment", opacity = 0.9) %>%
+  addLayersControl(baseGroups = c("Longhill at Ovingdean", "Longhill at Elm Grove"),
+                   options = layersControlOptions(collapsed = FALSE)) %>%
+  hideGroup("Longhill at Elm Grove")
+```
+
+The single-school specification discussed below produces a very different map, and it is worth seeing beside the paired one.
+
+```{r cd-open-map-single}
+#| fig-cap: "One catchment per school, at Longhill's adjudicated PAN of 210, with Longhill at Ovingdean. Nine catchments instead of seven, and every neighbourhood in the city reassigned."
+
+sng <- ocd$designs$single_now_210$assignment_repaired %>%
+  left_join(ocd$zones, by = "zone")
+
+sn_names <- sort(unique(sng$catchment))
+pal_sn <- colorFactor(
+  colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))(length(sn_names)),
+  domain = sn_names)
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(data = st_as_sf(sng, coords = c("zone_e", "zone_n"),
+                                   crs = 27700) %>% st_transform(4326),
+                   radius = 6, fillColor = ~pal_sn(catchment),
+                   fillOpacity = 0.85, color = "white", weight = 1,
+                   label = ~paste0(zone, ": ", catchment)) %>%
+  addCircleMarkers(data = st_transform(
+                     st_as_sf(inp$schools, coords = c("easting", "northing"),
+                              crs = 27700), 4326),
+                   radius = 5, color = "black", weight = 1,
+                   fillColor = "white", fillOpacity = 1, label = ~name) %>%
+  addLegend("bottomright", pal = pal_sn, values = sn_names,
+            title = "Catchment school", opacity = 0.9)
+```
+
+How the designs are produced. Assigning each neighbourhood to its nearest school gives a Voronoi diagram, which ignores capacity — the popular central schools would be handed far more children than they have places for. Adding the capacity constraint turns this into optimal transport. Give each catchment a scalar *price*, assign every neighbourhood to whichever minimises **journey time + price**, then raise the price of oversubscribed catchments and lower it for undersubscribed ones until each holds the right number of children. The result is an additively weighted Voronoi diagram, or *power diagram*: it minimises total travel time subject to every catchment being the right size, and its regions are contiguous, so the output is a map rather than a scatter of fragments. Every input is published — LSOA child counts, admission numbers from the adjudicator's determination, and the same routed journey times used throughout this document.
 
 Three constraints turned out to be necessary before the output was usable, and they are worth stating because each corrects a failure that looked plausible on the page.
 
@@ -2429,6 +2524,8 @@ that is right.
 
 **Rows C and G can be read from this document. Rows A, B, E and F cannot.**
 
+**Recommendation: the faith-school choice set should be fitted from the records before the cascade is dismissed as an option.** This is the sharpest case in the report of published data producing a wrong answer rather than an imprecise one — a mechanism that may be the most powerful lever available to Longhill is reported here as exactly zero. If the council is weighing admission-number reductions across the city, it needs to know whether reducing Cardinal Newman helps Longhill by thirty children or by none, and the difference between those is a restricted choice set that individual preference records would supply directly.
+
 ```{r pan-open-slack}
 po$slack %>%
   transmute(School = name, PAN = pan, Intake = round(intake),
@@ -2540,6 +2637,19 @@ blind spot.
 **Read the lower part of every envelope in this document as the operative
 range, not the median.** Where a figure is quoted with a band around it, the
 weight of the evidence sits at its pessimistic end.
+
+**Recommendation: replace this sweep with a measurement.** Sweeping is the
+right response to not knowing, and it is why the conclusions here are stated as
+ranges. But it is a second-best. The single input that would collapse the widest
+band in this document — how attractive each school is, net of where it stands —
+is recoverable from the council's admissions records by a standard regression,
+and would turn `r round(env$importance$pct[env$importance$term == "w_spec"], 1)`% of the uncertainty into a fitted coefficient.
+
+I would carry out that work with the council, share the code and the outputs,
+and publish nothing disclosive. What the authority would get in return is not a
+better version of this document: it is a model of its own school system that can
+be re-run against any proposal before it is consulted on, rather than argued
+about afterwards.
 :::
 
 # What this shows, and what it does not
