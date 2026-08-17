@@ -67,6 +67,11 @@ cat_cols <- c("DS_Varndean" = "#4C72B0", "Hove_Blatch" = "#DD8452",
 fmt <- function(x, d = 0) formatC(x, format = "f", digits = d, big.mark = ",")
 
 tbl <- function(df, caption = NULL, ...) {
+  # Years are labels, not quantities. Without this, big.mark renders 2026
+  # as "2,026" directly beneath a date-like header, which reads as an error.
+  yr <- grepl("year|round", names(df), ignore.case = TRUE)
+  df[yr] <- lapply(df[yr], function(v)
+    if (is.numeric(v)) format(v, trim = TRUE, scientific = FALSE) else v)
   kable(df, caption = caption, format.args = list(big.mark = ","), ...) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
                   full_width = FALSE, position = "left", font_size = 13)
@@ -1021,6 +1026,65 @@ cp %>%
   pivot_wider(names_from = entry_year, values_from = txt) %>%
   rename(Catchment = catchment) %>%
   tbl(caption = "Children aged forward from Reception offers / the council's own forecast, by catchment and entry year")
+```
+
+```{r catch-proj-plot}
+#| fig-cap: "Each catchment's Reception offers aged forward seven years (solid) against the council's October 2025 forecast (dashed). Every catchment's two lines run roughly parallel except Longhill's, which diverge."
+#| fig-height: 6
+
+pj <- bind_rows(
+  rec$by_catchment %>%
+    transmute(catchment, entry_year, n = projected, src = "Aged forward from Reception"),
+  rec$council %>%
+    transmute(catchment = CatchmentGroup, entry_year, n = council,
+              src = "Council forecast, Oct 2025")) %>%
+  filter(entry_year >= 2026, !is.na(n))
+
+pj %>%
+  ggplot(aes(entry_year, n, colour = src, linetype = src)) +
+  geom_line(linewidth = 0.9) + geom_point(size = 1.6) +
+  facet_wrap(~ catchment, ncol = 3, scales = "free_y") +
+  scale_colour_manual(values = c("Aged forward from Reception" = "#1b9e77",
+                                 "Council forecast, Oct 2025"  = "#d95f02")) +
+  scale_linetype_manual(values = c("Aged forward from Reception" = "solid",
+                                   "Council forecast, Oct 2025"  = "dashed")) +
+  expand_limits(y = 0) +
+  labs(title = "Where the council's forecast parts company with the children",
+       subtitle = "Year 7 cohort by catchment. Longhill is the only catchment where the two diverge",
+       x = "Year 7 entry year", y = "Children", colour = NULL, linetype = NULL) +
+  theme(legend.position = "bottom")
+```
+
+The pattern is easier to see as the gap itself — the council's forecast expressed as a percentage of the children the Reception cohorts imply.
+
+```{r catch-proj-gap}
+#| fig-cap: "The council's forecast as a share of the aged-forward Reception cohort. A catchment sitting near 100% is being forecast in line with its own children; Longhill is not."
+
+gap <- rec$by_catchment %>%
+  select(catchment, entry_year, ours = projected) %>%
+  inner_join(rec$council %>%
+               transmute(catchment = CatchmentGroup, entry_year, council),
+             by = c("catchment", "entry_year")) %>%
+  mutate(ratio = 100 * council / ours,
+         lh = catchment == "Longhill")
+
+gap %>%
+  ggplot(aes(entry_year, ratio, group = catchment, colour = lh)) +
+  geom_hline(yintercept = 100, linetype = "dotted", colour = "grey50") +
+  geom_line(aes(linewidth = lh)) + geom_point(size = 1.8) +
+  scale_colour_manual(values = c(`TRUE` = "#d95f02", `FALSE` = "grey65"),
+                      labels = c(`TRUE` = "Longhill", `FALSE` = "Other catchments")) +
+  scale_linewidth_manual(values = c(`TRUE` = 1.2, `FALSE` = 0.6), guide = "none") +
+  ggrepel::geom_text_repel(
+    data = gap %>% filter(entry_year == max(entry_year)),
+    aes(label = catchment), size = 3, hjust = 0, direction = "y",
+    nudge_x = 0.3, segment.colour = "grey80", show.legend = FALSE) +
+  scale_x_continuous(limits = c(2026, 2034)) +
+  expand_limits(y = 0) +
+  labs(title = "Longhill is the only catchment forecast below its own children",
+       subtitle = "Council forecast as a percentage of the aged-forward Reception cohort",
+       x = "Year 7 entry year", y = "Council forecast as % of cohort", colour = NULL) +
+  theme(legend.position = "bottom")
 ```
 
 ```{r catch-proj-fall}
