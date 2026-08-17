@@ -1,0 +1,16 @@
+# The r5r network build: large, machine-generated, rebuildable from OSM+GTFS
+public/output/travel/r5_network/
+*.pbf
+*.mapdb
+*.mapdb.p
+
+# Quarto working files
+.quarto/
+_freeze/
+*_files/
+
+# R session
+.Rproj.user/
+.Rhistory
+.RData
+rjavaenv/
