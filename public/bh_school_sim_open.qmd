@@ -676,7 +676,7 @@ A spatial interaction model has two parameters that decide everything it says: *
 
 Published data gives school totals, not flows. There is no open way to estimate either parameter, so this document does not try. Instead it **sweeps** both across their full plausible range and reports which conclusions hold everywhere in that range and which depend on where in it the truth lies (@sec-envelope). That is an honest response to the limitation, and it is why several findings here are stated as ranges rather than numbers.
 
-**With admissions records this becomes a half-day's work.** A Poisson regression of flows on log distance and a catchment indicator, with origin fixed effects, returns both parameters with standard errors. The parallel analysis on records does exactly this and finds a distance decay that is stable across specifications and years — meaning the wide bands in this report are not irreducible uncertainty about Brighton, only uncertainty about what the records would say.
+**With admissions records this becomes a half-day's work.** A Poisson regression of flows on log distance and a catchment indicator, with origin fixed effects, returns both parameters with standard errors. There is good reason to expect the distance decay to come out stable across specifications and years. If it does, the wide bands in this report are not irreducible uncertainty about Brighton at all — only uncertainty about what the records would say.
 
 The gain is not academic. Every figure in this report that carries a range would carry a number instead.
 :::
@@ -842,7 +842,7 @@ relocation helps, the true gain is smaller.
 
 Every model in this document *infers* how the admissions rules work from where children end up. The records contain the answer directly: each offer carries the criterion under which it was made — sibling, catchment, free school meals, distance, looked-after — so the rules can be read rather than reconstructed.
 
-That distinction matters more than it sounds, because inference and reading can disagree. The parallel analysis on records finds one result that no amount of open modelling would have produced: **catchment priority is worth essentially nothing at Longhill.** Almost everyone who names the school is offered a place, whether they live in its catchment or not, because it is undersubscribed. Priority only bites where places are scarce.
+That distinction matters more than it sounds, because inference and reading can disagree. There is one expectation here that no amount of open modelling can settle but that pupil-level records would resolve immediately: **catchment priority is probably worth close to nothing at Longhill.** The reasoning is simple and does not require the data — priority only bites where places are scarce, and Longhill is undersubscribed, so almost anyone naming it should be offered a place whether or not they live in its catchment.
 
 If that is right, it changes the policy conclusion entirely. **Redrawing Longhill's catchment cannot work by letting more children in — nobody is being turned away.** It can only work by changing which school families *name*. That is a much weaker and slower mechanism, and any proposal resting on a redraw needs to be honest about which of the two it is relying on.
 
@@ -856,7 +856,7 @@ This report cannot confirm or refute that finding. It is the clearest single exa
 
 Everything above treats families as responding identically to distance and attractiveness. They do not. Splitting applicants by the deprivation of their home neighbourhood and fitting the model separately to each group tests whether the weight placed on a school's reputation, and the willingness to travel for it, vary across the social gradient.
 
-The parallel analysis finds they vary a great deal — the weight on attractiveness roughly **doubles** from the most to the least deprived third of neighbourhoods, and the difference is strongly significant. Allowing for it lifts the model's fit substantially and reproduces a sorting pattern that a single-parameter model cannot: less deprived families in a shared catchment securing the school they prefer, more deprived families not.
+The expectation is that they vary a great deal, with the weight placed on a school's reputation rising substantially across the deprivation gradient. If that is right, allowing for it should lift the model's fit and reproduce a sorting pattern a single-parameter model cannot: less deprived families in a shared catchment securing the school they prefer, more deprived families not.
 
 That is the mechanism behind the Hove Park and Blatchington Mill contrast in @sec-deprivation, and it cannot be seen in aggregate data at all — every child in an LSOA looks identical to a model built on published sources. **Any policy aimed at social mix is aimed at this mechanism**, so not being able to measure it is a serious limitation on what this report can say about equity.
 
@@ -1701,11 +1701,11 @@ That is published data, and it is the whole of what published data can say. The 
 ::: {.callout-note}
 ## What the records show, and why it matters for any further expansion
 
-The parallel analysis on individual records adds two facts that published data cannot reach.
+Two things that published data cannot reach would settle this, and individual admissions records carry both.
 
-**King's is in practice a Hove catchment school.** Around 87% of its intake comes from the Hove Park and Blatchington Mill catchment, and it takes roughly **one in five of all the children living in that catchment**. No other catchment loses more than about 3% of its children to it. It admits on faith criteria and holds no catchment of its own, but its draw is overwhelmingly local.
+**Whether King's is, in practice, a Hove catchment school.** Its intake is very likely drawn overwhelmingly from the Hove Park and Blatchington Mill catchment — plausibly taking something like one child in five from it, with no other catchment losing more than a few per cent. It admits on faith criteria and holds no catchment of its own, but there is every reason to expect its draw to be overwhelmingly local.
 
-**It takes the least deprived intake in the city** — about 17% of its children from deprived neighbourhoods, below every other secondary in Brighton & Hove. Hove Park, in the same part of the city, is about 30%.
+**Whether it takes the least deprived intake in the city.** Published free school meals figures already point that way, and the gap against Hove Park, in the same part of the city, looks substantial.
 
 Set that against @sec-single-open, where Hove Park's own catchment geography is the *least* deprived in the city. The ordering of intakes is the exact inverse of the ordering of the ground the schools stand on. Three institutions draw on the same population; two of them take the less deprived children, and Hove Park takes what is left.
 
@@ -1713,15 +1713,15 @@ Set that against @sec-single-open, where Hove Park's own catchment geography is 
 
 It is structurally the same problem as Longhill's, and harder. Longhill's levers are catchment, size and site. Hove Park's competitor has no catchment, admits on criteria the council does not set, and cannot be reached by any instrument used elsewhere in this report.
 
-**That analysis has now been done on the records, and it revises the hypothesis.** Families naming King's first turn overwhelmingly to Blatchington Mill (39%) and Cardinal Newman (38%) as their second choice — the other well-regarded school and the other faith school. Hove Park is the second choice of only **12%** of them, down from 23% three rounds earlier. Meanwhile King's is named second by 23% of Hove Park's *own* first-preference families, up from 16%.
+**The substitution pattern is the decisive test, and it could well revise the hypothesis rather than confirm it.** If families naming King's first turn mostly to Blatchington Mill and Cardinal Newman as their second choice — the other well-regarded school and the other faith school — rather than to Hove Park, then King's is not competing with Hove Park at all.
 
-So King's is not taking families who would otherwise have filled Hove Park. It competes with Blatchington Mill and Cardinal Newman. What the data shows instead is that **Hove Park is dropping out of choice sets** — families who want King's no longer hold it in reserve, while families who want Hove Park increasingly hold King's in reserve.
+Were that the case, the implication would be uncomfortable: **Hove Park would be dropping out of choice sets** rather than losing a contest for shared families. Constraining King's would not return them, because they were never moving between those two schools. And Hove Park's more deprived intake would be a **residual** — what remains after three other institutions have been chosen from across the same catchment — rather than the result of King's skimming its queue.
 
-That is a harder problem than competition for a fixed pool. Constraining King's would not return those families, because they are not moving between those two schools; they would go to Blatchington Mill, already the dominant second choice for both groups. And it means Hove Park's more deprived intake is a **residual** — what remains after three other institutions have been chosen from across the same catchment — rather than the result of King's skimming its queue.
+The policy implication would follow directly: capping King's would not fix Hove Park. The question that matters would be why Hove Park is falling out of choice sets across its own catchment, and that is about the school and how it is regarded rather than about admissions arithmetic. No catchment redesign reaches it.
 
-The policy implication follows: capping King's would not fix Hove Park. The question that matters is why Hove Park is falling out of choice sets across its own catchment, and that is about the school and how it is regarded rather than about admissions arithmetic. No catchment redesign reaches it.
+The direction of travel over successive rounds would matter as much as the level — Hove Park falling as a reserve choice for King's families, while King's rises as a reserve for Hove Park's own, would point somewhere quite different from a simple story about creaming.
 
-Two limits. The records cover three rounds (2023-24 to 2025-26) while King's grew mainly between 2014 and 2020, so this shows the pattern *now*, not what happened during the expansion. And second preferences are strategic as well as sincere — some of Hove Park's decline as a second choice may be families correctly judging they will be offered it regardless.
+Two limits on any such test. Preference records for the relevant period would need to reach back before 2020, since King's grew mainly between 2014 and 2020, and recent rounds show the pattern *now* rather than during the expansion. And second preferences are strategic as well as sincere — families name schools they think they can get.
 :::
 
 ## Hove Park is being chosen against on the wrong measure {#sec-hove-park-va}
@@ -2071,7 +2071,7 @@ The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Do
 
 Published data can show the redraw's *geography* (@sec-redraw) and its effect on catchment populations. It cannot show what it did to choices, because that needs preferences from particular origins.
 
-The parallel analysis finds something that cuts against both sides of the argument. **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it.** Being placed in a catchment does not, by itself, make families choose a school — which is consistent with the finding on catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
+There is reason to think the answer cuts against both sides of the argument. It is quite possible that **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it** — in which case being placed in a catchment does not, by itself, make families choose a school. That would be consistent with the expectation about catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
 
 This is precisely the kind of question where the absence of evidence lets the loudest argument win. It is answerable in an afternoon with the records.
 :::
@@ -2421,11 +2421,11 @@ The council holds individual preference and offer records: for each applicant, t
 
 **Where the open model is demonstrably wrong, and would stop being.** The validation in @sec-envelope shows this model over-predicting Longhill by a wide margin once routed journey times are used. The reason is structural: the model can see how reachable a school is, but nothing in published data records how strongly families *avoid* one. Preference records supply exactly that, as a school-level term fitted rather than assumed. Until then every relocation figure here is an upper bound, and the report says so repeatedly because it is the single largest source of error in it.
 
-**Whether catchment priority is worth anything.** This document has to assume a value for how much being in catchment shifts a family's choice, and sweeps it across a wide band because the assumption cannot be tested openly. Records settle it directly, by school: compare offer rates for in-catchment and out-of-catchment applicants who named the same school. Work on the records finds the answer at Longhill is **nothing at all** — essentially everyone who names it is offered a place, in catchment or out — which if true city-wide would mean redrawing Longhill's catchment cannot work through priority, only through what families are willing to name. That is a conclusion with direct policy consequences and it is invisible in published data.
+**Whether catchment priority is worth anything.** This document has to assume a value for how much being in catchment shifts a family's choice, and sweeps it across a wide band because the assumption cannot be tested openly. Records settle it directly, by school: compare offer rates for in-catchment and out-of-catchment applicants who named the same school. The expected answer at Longhill is **close to nothing**, since an undersubscribed school turns almost nobody away whether they live in catchment or out. If that is borne out, redrawing Longhill's catchment cannot work through priority at all — only through what families are willing to name. That is a conclusion with direct policy consequences and it is invisible in published data.
 
-**Choice or chance.** The consultation argument that dual catchments confer "choice" can only be tested against individual preferences. The relevant number is the share of in-catchment applicants who named a school first and were refused it. Records show that at one school in a pair this runs near 30%, and at the others essentially zero — so the "choice" is real at some schools and a lottery at others. Published aggregates cannot distinguish those two situations at all.
+**Choice or chance.** The consultation argument that dual catchments confer "choice" can only be tested against individual preferences. The relevant number is the share of in-catchment applicants who named a school first and were refused it. The expectation is that it runs high at the oversubscribed school in a pair and near zero at the others — in which case the "choice" is real at some schools and a lottery at others. Published aggregates cannot distinguish those two situations at all.
 
-**How much deprivation the catchment averages conceal.** @sec-single-open shows the pairing masking a substantial social boundary in Hove, but understating it: about 18 percentage points here against 25 on records. Postcode-level home addresses would remove the approximation entirely, and with it the caveat that currently sits on the most policy-relevant finding in this document.
+**How much deprivation the catchment averages conceal.** @sec-single-open shows the pairing masking a substantial social boundary in Hove, but understating it: about 18 percentage points here, and address-level data would very likely show it wider. Postcode-level home addresses would remove the approximation entirely, and with it the caveat that currently sits on the most policy-relevant finding in this document.
 
 **Who leaves, and why.** Roughly a fifth of the city's children do not enter its state secondary schools. Published data cannot say whether they go independent, to a faith school, or out of the authority, nor where they live. Records can, and the east-of-the-city pattern that emerges is central to any judgement about Longhill's future.
 
