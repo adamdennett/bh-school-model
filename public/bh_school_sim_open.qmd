@@ -139,7 +139,14 @@ The difficulty is that those decisions are currently being taken **one at a time
 
 This document exists to make a different kind of conversation possible: one in which the city's schools are treated as a **single interacting system**, where a change at one school is understood in terms of what it does to every other, across the whole period the demographic change is going to last.
 
-It is built entirely from published data, deliberately, so that anyone can check it. But published data has hard limits, and this report is explicit about every one of them. Several sections below exist only to say *what cannot be established here and what the council's own records would establish immediately.* They are marked with a note like this one.
+It is built entirely from published data, deliberately, so that anyone can check it. But published data has hard limits, and this report is explicit about every one of them.
+
+**Two kinds of flag appear throughout, and they mean different things:**
+
+- **"This section cannot be done on published data"** — the analysis is absent entirely. Five sections are placeholders of this kind, saying what the records would establish.
+- **"This result differs from the calibrated model"** — the analysis *is* here, but the open version and the record-calibrated version disagree. These flags say **which direction the open figure is wrong in, and by roughly how much**, so a reader can discount appropriately rather than take the number at face value.
+
+The second kind matters most. Where this report and the calibrated model diverge, **the open model is almost always the more optimistic of the two about Longhill** — and the flags say so at each point rather than only in a methods appendix.
 
 **What is being asked for is access to the admissions records the council already holds** — preferences, offers, allocation criteria, home postcodes — under the arrangements that already govern research use of pupil data. Nothing new would need collecting. In return, the analysis becomes far sharper: the sections marked below stop being gaps, the largest source of error in this report disappears, and the council gets a tested model of its own system that can be re-run against any proposal before it is consulted on.
 
@@ -1651,6 +1658,16 @@ origin–destination matrix of preferences by area would settle it immediately.
 
 # Shrink, move, or redraw?
 
+::: {.callout-caution}
+## This result differs from the calibrated model
+
+The fill rates below inherit the over-prediction described under the chart in this section: because the open model recruits roughly twice as many children to Longhill as the records support, **every fill rate here is too high**, and the PAN at which the school appears viable is correspondingly too large.
+
+**With access to the records, the pattern would change in a specific way.** The calibrated model puts configuration A at 37% by 2035 rather than anything approaching viable, and finds only one configuration — Elm Grove at PAN 120 with redrawn catchments — holding above 80% across the whole window. On the open figures several configurations look survivable at PAN 150. **They are not, on the calibrated model.**
+
+What survives the correction is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order, discount the levels.
+:::
+
 ```{r cfg-table}
 os$lh_band %>%
   filter(entry_year %in% c(2026, 2030, 2035)) %>%
@@ -1681,6 +1698,20 @@ os$natural %>%
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 4))
 ```
+
+::: {.callout-caution}
+## This chart is the most optimistic thing in the report, and it is wrong in a known direction
+
+**Read the level on this chart with great care.** It is the single largest divergence between this open model and the calibrated one, and the divergence is not small.
+
+On records, Longhill's natural recruitment in 2035 is around **79 children** where it stands today. This chart puts it at **`r cnat("A", 2035)`** — roughly double. The whole family of curves sits about twice as high as the calibrated model produces, so where this chart shows Longhill supporting five forms of entry, the calibrated model shows fewer than three.
+
+**Why.** The open model can see how reachable Longhill is but has nothing that measures how strongly families *avoid* it. Published data records where children were offered places, not what they wanted; Longhill's revealed attractiveness on records is the lowest in the city, and this model has no way to know that. Once routed journey times let it see that Longhill is genuinely accessible, it sends far more children there than the city actually does.
+
+**What would change with access to the records.** Every curve on this chart would move down, by roughly a factor of two, and the conclusion would harden considerably: the calibrated model finds no configuration in which Longhill recruits above four forms of entry after 2030, and configuration A falls below three. The *ordering* of the configurations is largely preserved — relocation and redrawing still help, in the same rank order — so the comparative reading survives. **The level does not.**
+
+Treat the shape of this chart as informative and the height of it as an upper bound.
+:::
 
 ::: {.callout-important}
 ## Relocation helps — a correction to an earlier version
@@ -2174,6 +2205,20 @@ The offer stands: the model, the code, and the analysis are open, and the parts 
 
 These follow from published data. The council holds the records that would
 confirm or refute them.
+
+::: {.callout-caution}
+## Prediction 1 is already known to be too high
+
+The calibrated model puts Longhill's 2035 natural recruitment at around **79
+children** under current catchments — below the bottom of the range quoted in
+prediction 1, not inside it. That is the over-prediction described in
+@sec-envelope arriving at a specific number.
+
+The prediction is left as published data states it, because that is what this
+document is for and a reader should be able to see exactly where the open
+sources lead. But it is the clearest single case in the report of a figure the
+records would move, and the direction is downward.
+:::
 
 1. Longhill's natural recruitment in 2035 sits between
    `r round(env$q2$min[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])`
