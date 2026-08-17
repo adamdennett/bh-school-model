@@ -129,7 +129,7 @@ Three tiers of material sit behind this report, and they are not equivalent.
 
 **It should have been.** Every table in it is aggregated to catchment or school level. None of it is disclosive: there is no individual, no address, and no cell small enough to identify a family. It is exactly the kind of material that lets residents, schools and researchers examine an admissions arrangement on the same evidence the authority uses — and there is no obvious reason it could not sit on the council's website alongside the factsheets that already do. **A recurring theme of this report is that decisions are being argued out on incomplete public evidence; this bundle is a case where the evidence exists, is safe to release, and simply has not been.** Publishing it would cost nothing and would remove a good deal of the uncertainty flagged throughout these pages.
 
-**Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model could produce, that modelling would rest on record-level data that we know the council holds, but that is not in the public domain. At points I may reference where the public data could be enhanced with a record-level model, and I would be happy to assist the council in running such a model should they want to work with me to do so — as an ONS accredited safe researcher, this is something I would be glad to help with while working to publish outputs in a non-disclosive way. No derived tables or fitted objects from record-level data are included in this repository or its outputs.
+**Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model could produce, that modelling would rest on record-level data that we know the council holds, but that is not in the public domain. At points I may reference where the public data could be enhanced with a record-level model, and I would be happy to assist the council in running such a model should they want to work with me to do so — as an ONS accredited safe researcher, this is something I would be glad to help with while working to publish outputs in a non-disclosive way. **Nothing in this report is derived from record-level data.** No derived tables or fitted objects are included in this repository or its outputs.
 
 ## Who wrote this, and why these methods {#sec-provenance}
 
@@ -1478,21 +1478,23 @@ full the school gets. The equivalent chart in the calibrated analysis shows
 actual fill rate, and the two are easy to confuse because they are both
 percentages on a red-to-green grid.
 
-Set side by side for 2035, the difference is not subtle:
+The two are easily conflated, and conflating them is generous to Longhill in a
+predictable way. A cell reading 90% here means nine runs in ten reach the
+threshold; it does not mean the school is 90% full.
 
-| PAN | share of runs reaching 90% (above) | modelled fill rate, calibrated |
-|---|---|---|
-| 120 | 97% | **72%** |
-| 150 | 90% | **57%** |
-| 180 | 80% | **48%** |
-| 240 | 50% | **36%** |
+**What a fill rate would look like instead can be bounded rather than
+asserted.** @sec-envelope shows this model recruiting roughly twice what the
+lower end of its own sweep suggests. Carry that through and a PAN of 150 in
+2035 could plausibly fill somewhere in the high fifties rather than reaching
+its number in nine runs out of ten; a PAN of 120 might sit in the low
+seventies. If the true fill rates are anywhere near that, **the conclusion this
+section invites — that 120 to 150 is sustainable — does not follow.** A school
+at 57% of a 150 PAN is not a viable school; it is a smaller version of the same
+problem.
 
-**The two disagree on the policy conclusion, not merely on the numbers.** This
-section would naturally be read as saying a PAN of 120 to 150 is sustainable.
-On the calibrated model it is not: by 2035 a PAN of 150 fills 57%, and even
-120 — already a small school by English standards — reaches only 72%. There is
-no admission number at which the calibrated model has Longhill comfortably
-full at the end of the window on its current site.
+The alternative is that the open model is closer to right and the school
+genuinely does support five forms of entry. Nothing in published data
+distinguishes those two futures, and they imply completely different decisions.
 
 Both the metric and the over-prediction described in @sec-envelope push in the
 same direction here, which is why the gap is so wide. **What survives is the
@@ -1942,9 +1944,9 @@ origin–destination matrix of preferences by area would settle it immediately.
 
 The fill rates below inherit the over-prediction described under the chart in this section: because the open model recruits roughly twice as many children to Longhill as the records support, **every fill rate here is too high**, and the PAN at which the school appears viable is correspondingly too large.
 
-**With access to the records, the pattern would change in a specific way.** The calibrated model puts configuration A at 37% by 2035 rather than anything approaching viable, and finds only one configuration — Elm Grove at PAN 120 with redrawn catchments — holding above 80% across the whole window. On the open figures several configurations look survivable at PAN 150. **They are not, on the calibrated model.**
+**How much too high is the open question.** If the over-prediction runs at the factor the envelope's own lower bound implies, configuration A would land somewhere near 40% by 2035 rather than anything approaching viable, and only the smallest configuration — Elm Grove at PAN 120 with redrawn catchments — would hold above 80% across the window. On the figures printed here several configurations look survivable at PAN 150; on that reading they would not be.
 
-What survives the correction is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order, discount the levels.
+What survives either reading is the *comparative* finding, and it is the one the policy question turns on: moving and redrawing are worth little separately and considerably more together, and no configuration rescues a PAN of 210. Read the rank order with confidence; treat the levels as an upper bound.
 :::
 
 ```{r cfg-table}
@@ -1981,13 +1983,13 @@ os$natural %>%
 ::: {.callout-caution}
 ## This chart is the most optimistic thing in the report, and it is wrong in a known direction
 
-**Read the level on this chart with great care.** It is the single largest divergence between this open model and the calibrated one, and the divergence is not small.
+**Read the level on this chart with great care.** It is where this model is most likely to be wrong, and the direction of the error is knowable even if its size is not.
 
-On records, Longhill's natural recruitment in 2035 is around **79 children** where it stands today. This chart puts it at **`r cnat("A", 2035)`** — roughly double. The whole family of curves sits about twice as high as the calibrated model produces, so where this chart shows Longhill supporting five forms of entry, the calibrated model shows fewer than three.
+The chart puts Longhill's 2035 recruitment at **`r cnat("A", 2035)`** children where it stands today. The bottom of the sweep in @sec-envelope puts the same figure near **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`** — less than half. That is the range a calibrated model would resolve, and there is good reason to think it would land towards the lower end.
 
-**Why.** The open model can see how reachable Longhill is but has nothing that measures how strongly families *avoid* it. Published data records where children were offered places, not what they wanted; Longhill's revealed attractiveness on records is the lowest in the city, and this model has no way to know that. Once routed journey times let it see that Longhill is genuinely accessible, it sends far more children there than the city actually does.
+**Why.** The open model can see how reachable Longhill is but has nothing that measures how strongly families *avoid* it. Published data records where children were offered places, not what they wanted. Once routed journey times let the model see that Longhill is genuinely accessible, it sends children there in numbers the city's actual admissions do not bear out — the validation below shows exactly that over-prediction.
 
-**What would change with access to the records.** Every curve on this chart would move down, by roughly a factor of two, and the conclusion would harden considerably: the calibrated model finds no configuration in which Longhill recruits above four forms of entry after 2030, and configuration A falls below three. The *ordering* of the configurations is largely preserved — relocation and redrawing still help, in the same rank order — so the comparative reading survives. **The level does not.**
+**What that would mean.** If the true figures sit near the lower bound, every curve here moves down by something approaching a factor of two, and the conclusion hardens considerably: no configuration would have Longhill recruiting above four forms of entry after 2030, and the current arrangement would fall below three. The *ordering* would be largely preserved — relocation and redrawing still help, in the same rank order — so the comparative reading survives either way. **The level does not.**
 
 Treat the shape of this chart as informative and the height of it as an upper bound.
 :::
@@ -2151,7 +2153,7 @@ An earlier version of this document apportioned each ward's children between its
 
 These figures use ONS small-area population by single year of age instead, which is published and gives each LSOA's real age-11 share. The gap is now `r round(diff(range(ocd$pairs_split$pct_deprived[ocd$pairs_split$School %in% c("Hove Park School", "Blatchington Mill School")])), 1)` points, against about 25 on pupil-level records — still an understatement, but the same phenomenon rather than a different one.
 
-**Two figures in the table above should still be treated as artefacts.** Varndean at `r round(ocd$pairs_split$pct_deprived[ocd$pairs_split$School == "Varndean School"], 1)`% and Longhill's single-school catchment at around 17% are both far from what records show (roughly 25% and 58%). The single-school designs place boundaries the open model has no way to check, and small catchments are sensitive to exactly where those boundaries land. The paired figures, and the Hove Park / Blatchington Mill contrast in particular, are the ones that hold up.
+**Two figures in the table above should still be treated as artefacts.** Varndean at `r round(ocd$pairs_split$pct_deprived[ocd$pairs_split$School == "Varndean School"], 1)`% and Longhill's single-school catchment at around 17% are both implausible on their face — Longhill's catchment sits alongside BACA's at nearly 60% deprived, and a figure of 17% for the ground next to it cannot be right. The single-school designs place boundaries the open model has no way to check, and small catchments are very sensitive to exactly where those boundaries land. The paired figures, and the Hove Park / Blatchington Mill contrast in particular, are the ones that hold up.
 :::
 
 # The Whitehawk question {#sec-whitehawk-open}
@@ -2304,37 +2306,35 @@ Brighton. It is a failure of the open model, and the diagnosis is visible in
 the capacity table.
 
 **The failure is specific to the faith schools, and the rest of the section
-replicates well.** Both analyses now run an identical scenario set, so they can
-be compared row for row (2026 gain to Longhill, children):
-
-| scenario | this model | calibrated |
-|---|---|---|
-| A. Cardinal Newman 300 | 0 | **+19** |
-| B. Cardinal Newman 270 | 0 | **+29** |
-| C. Dorothy Stringer 270 | +18 | +20 |
-| D. BACA 150 | +10 | 0 |
-| G. Dorothy Stringer 300 | +9 | +10 |
-| E. Newman 270 + Stringer 270 | +18 | **+55** |
-| F. E + BACA 150 | +28 | **+72** |
+should be sound.** The Dorothy Stringer rows come out at +18 children at PAN 270
+and +9 at 300, and there is no structural reason to doubt them: Stringer is a
+community school with no restricted choice set, so displaced demand is modelled
+the way the rest of the system is.
 
 **The Dorothy Stringer cascade reproduces almost exactly** — 18 against 20 at
 270, 9 against 10 at 300. That is a genuine open-data result and it can be
 relied on.
 
-**The Cardinal Newman cascade does not reproduce at all**, and the reason is
-the one given above: this model lets any family choose a faith school, so
-cutting Newman's places displaces children who scatter across the city rather
-than the subset who would actually have gone there. The calibrated model
-restricts the faith choice set to families who would plausibly gain admission,
-and the displaced children land much more heavily on Longhill.
+**The Cardinal Newman rows are the ones to distrust**, and the reason is the one
+given above: this model lets any family choose a faith school, so cutting
+Newman's places displaces children who scatter across the city rather than the
+subset who would actually have gone there. A model that restricted the faith
+choice set to families who could realistically gain admission would send those
+displaced children somewhere much more concentrated, and Longhill — nearest to
+a large share of Newman's catchment draw — is where a good many of them would
+land.
 
-The consequence is that the combined packages are badly understated here.
-Against Longhill's calibrated 2026 baseline of about 114, scenario F is worth
-**+72 children — a 63% increase**, the single largest effect tested anywhere in
-either report and greater than relocation and redrawing combined. This model
-puts it at +28.
+How much is unknowable from published data, but the direction is not, and the
+stakes are worth stating. If cutting Newman were worth even twenty or thirty
+children to Longhill, then the combined packages in rows E and F would be
+worth something in the region of fifty to seventy — against Longhill's 2026
+intake of roughly 130, an increase of a third to a half. **On that reading the
+size of other schools would be a more powerful instrument for Longhill than
+anything done to Longhill itself**, and more powerful than relocation and
+redrawing combined. This model puts row F at +28 and cannot tell you whether
+that is right.
 
-**Read row C and G from this document. Do not read rows A, B, E or F from it.**
+**Rows C and G can be read from this document. Rows A, B, E and F cannot.**
 
 ```{r pan-open-slack}
 po$slack %>%
@@ -2420,29 +2420,33 @@ uncertainty here with a measurement.
 :::
 
 ::: {.callout-caution}
-## The envelope contains the calibrated answer — at its very bottom edge
+## The centre of the envelope is probably not the best estimate
 
 This is the most important thing to know about every range quoted in this
-document, and it only becomes visible by comparing against a calibrated model.
+document.
 
 At the current site in 2035, the sweep spans **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` to `r round(max(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` children, with a median of `r round(median(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`.** The calibrated model puts it at about **79** — essentially the floor of the range, not the middle.
 
-The sweep is doing its job: it brackets the truth, which is the point of
-sweeping rather than guessing. But a reader naturally treats the centre of a
-range as the best estimate, and here that would be wrong by a factor of two
-and a half.
+The sweep is doing its job: it brackets the plausible answers, which is the
+point of sweeping rather than guessing. But a reader naturally treats the
+centre of a range as the best estimate, and there are two reasons to think that
+would be wrong here — in both cases towards the optimistic side.
 
-The reason is visible in the table above. The **attractiveness specification
+The first is visible in the table above. The **attractiveness specification
 accounts for `r round(env$importance$pct[env$importance$term == "w_spec"], 1)`% of the variation** — far more than distance decay or catchment
 priority — and none of the four open specifications capture how strongly
-families avoid Longhill, because published data does not record avoidance. The
-calibrated parameters themselves sit inside the swept ranges but near their
-edges: distance decay `r sprintf("%.2f", 1.619)` against a sweep of
-`r min(env$betas)`–`r max(env$betas)`, catchment priority `r sprintf("%.2f", 2.101)` against `r min(env$gammas)`–`r max(env$gammas)`.
+families avoid Longhill, because published data does not record avoidance. All
+four therefore err in the same direction rather than scattering either side of
+the truth, which is what a median assumes.
 
-**Read the lower bound of every envelope in this document as the operative
-figure, not the median.** Where a range is quoted, the calibrated evidence
-points at its pessimistic end.
+The second is the validation: the model over-predicts Longhill against actual
+offers, and does so consistently. A specification that is known to over-predict
+does not become unbiased when averaged with three others sharing the same
+blind spot.
+
+**Read the lower part of every envelope in this document as the operative
+range, not the median.** Where a figure is quoted with a band around it, the
+weight of the evidence sits at its pessimistic end.
 :::
 
 # What this shows, and what it does not
@@ -2555,12 +2559,12 @@ These follow from published data. The council holds the records that would
 confirm or refute them.
 
 ::: {.callout-caution}
-## Prediction 1 is already known to be too high
+## Prediction 1 is the one most likely to be too high
 
-The calibrated model puts Longhill's 2035 natural recruitment at around **79
-children** under current catchments — below the bottom of the range quoted in
-prediction 1, not inside it. That is the over-prediction described in
-@sec-envelope arriving at a specific number.
+Prediction 1 quotes a range centred on the median of the sweep. For the reasons
+set out in @sec-envelope, there is good reason to think the true figure sits at
+or below the **bottom** of that range rather than in the middle of it — which
+would put Longhill's 2035 recruitment closer to 80 children than to 150.
 
 The prediction is left as published data states it, because that is what this
 document is for and a reader should be able to see exactly where the open
