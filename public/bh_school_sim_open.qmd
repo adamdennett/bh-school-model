@@ -1503,6 +1503,54 @@ The policy implication follows: capping King's would not fix Hove Park. The ques
 Two limits. The records cover three rounds (2023-24 to 2025-26) while King's grew mainly between 2014 and 2020, so this shows the pattern *now*, not what happened during the expansion. And second preferences are strategic as well as sincere — some of Hove Park's decline as a second choice may be families correctly judging they will be offered it regardless.
 :::
 
+## Hove Park is being chosen against on the wrong measure {#sec-hove-park-va}
+
+The section above leaves an obvious question: if Hove Park is dropping out of choice sets across its own catchment, what are families reacting to? Published data answers this one fully.
+
+```{r hp-open-va}
+av <- inp$attract %>%
+  transmute(School = name, `Attainment 8` = round(att8, 1),
+            `Progress 8` = round(p8, 2),
+            `Intake-adjusted (Lever)` = round(va_lever, 2),
+            `Preferences per place` = round(prefs_per_place, 2)) %>%
+  arrange(desc(`Attainment 8`))
+av %>% tbl(caption = "Three measures of the same schools, against how strongly families choose them")
+```
+
+```{r hp-open-cor}
+#| include: false
+ia <- inp$attract
+rho_of <- function(v) cor(ia$prefs_per_place, ia[[v]], method = "spearman", use = "complete.obs")
+r_att <- rho_of("att8"); r_p8 <- rho_of("p8"); r_va <- rho_of("va_lever")
+r_att_p8 <- cor(ia$att8, ia$p8, method = "spearman", use = "complete.obs")
+r_att_va <- cor(ia$att8, ia$va_lever, method = "spearman", use = "complete.obs")
+```
+
+How strongly families choose a school correlates with **Attainment 8 at `r sprintf("%.2f", r_att)`**, with **Progress 8 at `r sprintf("%.2f", r_p8)`**, and with the **intake-adjusted measure at `r sprintf("%.2f", r_va)`**.
+
+The middle figure is the interesting one, and it is a caution about Progress 8 rather than a finding about families. **Progress 8 correlates with Attainment 8 at `r sprintf("%.2f", r_att_p8)`** across these eleven schools — it is very nearly a restatement of the raw measure, so it cannot separate "families choose on attainment" from "families choose on progress". The intake-adjusted measure used in [*How to Pull the Right Lever*](https://adamdennett.github.io/) correlates with Attainment 8 at only `r sprintf("%.2f", r_att_va)`, so it can. And on that measure, families are **not** tracking what schools add.
+
+For Hove Park the consequence is direct. It sits near the bottom on Attainment 8, but on the intake-adjusted measure it is **positive and above Cardinal Newman and Patcham** — two schools chosen substantially more strongly than it is. Brighton Aldridge, which has the lowest Attainment 8 in the city, adds more on this measure than Blatchington Mill, Cardinal Newman or Hove Park.
+
+::: {.callout-warning}
+## The trap this creates, and why no catchment policy reaches it
+
+Attainment 8 is very largely a measure of who a school admits rather than what it does with them. That produces a closed loop, and Hove Park is inside it:
+
+1. It receives the residual intake after three other institutions have been chosen from its catchment (@sec-kings-open).
+2. A more deprived intake produces a lower Attainment 8, almost mechanically.
+3. Families choose on Attainment 8, so it is chosen less.
+4. Which makes its intake more residual still.
+
+Nothing in that loop requires the school to be getting worse, and the intake-adjusted measure says it is not. **The loop is driven by the measure families use, and it will keep turning regardless of what the school does.**
+
+This is why the levers in the rest of this report do not reach Hove Park. Catchment, admission number and site all change *who is in the queue*. None of them changes what parents are looking at when they choose. Publishing an intake-adjusted measure alongside the raw one — which any authority could do — is the only intervention here that acts on the actual mechanism.
+
+**One thing this cannot settle**: whether families choose on Attainment 8 because they do not know a contribution measure exists, or because they know and prefer the peer group anyway. Those imply completely different remedies — the first is answerable with better published information, the second is not. It is a survey question rather than a data question, and a council could answer it in a single admissions round.
+:::
+
+Eleven schools is eleven observations, and attractiveness, attainment and intake are entangled. The claim worth defending is the ordering one: families' revealed ordering matches raw attainment far more closely than it matches the intake-adjusted contribution, and Hove Park is among the schools where those two orderings diverge most.
+
 # What the 2024 redraw did {#sec-redraw}
 
 Before asking what a new catchment could do, it is worth pricing the one the

@@ -380,7 +380,19 @@ panel <- read_open_rds(OPEN$panel)
 perf <- panel %>%
   filter(URN %in% as.character(SCHOOLS_OPEN$urn)) %>%
   group_by(urn = as.numeric(URN)) %>%
-  summarise(att8 = mean(ATT8SCR, na.rm = TRUE), .groups = "drop")
+  # P8MEA is Progress 8: the DfE's published value-added measure. Carried
+  # alongside Attainment 8 so the two can be contrasted - families sort on
+  # one of them and not the other, which matters most for Hove Park.
+  # Three measures of the same schools, deliberately kept side by side:
+  #   att8     raw Attainment 8 - what league tables lead on
+  #   p8       DfE Progress 8 - the published value-added measure
+  #   va_lever Attainment 8 residualised on intake, the measure used in
+  #            "How to Pull the Right Lever" - the most demanding of the
+  #            three, because Progress 8 is itself correlated with intake
+  summarise(att8 = mean(ATT8SCR, na.rm = TRUE),
+            p8 = mean(suppressWarnings(as.numeric(P8MEA)), na.rm = TRUE),
+            va_lever = mean(residual_ATT8SCR_imputed, na.rm = TRUE),
+            .groups = "drop")
 
 # (c) uses the council's published first-preference counts, averaged over
 # the recent admissions rounds by 01a rather than taken from a single
@@ -404,6 +416,8 @@ attract <- SCHOOLS_OPEN %>%
     # Peacehaven is outside the council's factsheets; use its own area's
     # published figures as the best open stand-in.
     att8 = if_else(is.na(att8), mean(att8, na.rm = TRUE), att8),
+    p8 = if_else(is.na(p8) | is.nan(p8), NA_real_, p8),
+    va_lever = if_else(is.na(va_lever) | is.nan(va_lever), NA_real_, va_lever),
     prefs_per_place = if_else(is.na(prefs_per_place),
                               min(prefs_per_place, na.rm = TRUE), prefs_per_place),
     W_equal  = 1,
