@@ -2157,6 +2157,95 @@ its children live in the most deprived third of neighbourhoods, against
 `r round(dep$profile$pct_deprived[dep$profile$regime == "optionZ" & dep$profile$catchment == "Hove_Blatch"])`% in Hove and Blatchington's.
 
 ::: {.callout-important}
+
+## Most poor children do not live in poor areas {#sec-idaci-proxy-open}
+
+Everything in this section uses IDACI, an **area** measure, as a stand-in for
+the disadvantage of individual children. It is what published data offers, and
+it is worth being clear at the outset about what it can and cannot carry —
+because a widely held assumption fails here, and the failure bears directly on
+how the city talks about deprivation.
+
+```{r idaci-proxy-open}
+#| include: false
+dpo <- readRDS(file.path(PUBLIC_OUT, "deprivation_open.rds"))
+sh_dep <- sum(dpo$zones$Oi[dpo$zones$deprived]) / sum(dpo$zones$Oi)
+fsm_sch <- inp$attract %>% filter(!is.na(fsm))
+city_fsm <- weighted.mean(fsm_sch$fsm, fsm_sch$pan, na.rm = TRUE)
+conc <- function(R) sh_dep * R / (sh_dep * R + (1 - sh_dep))
+```
+
+**Start with two published numbers.** `r sprintf("%.0f%%", 100 * sh_dep)` of the
+city's children live in the most deprived 30% of neighbourhoods nationally —
+that is ONS child counts against the published IDACI ranking. And across the
+city's secondaries, `r sprintf("%.0f%%", city_fsm)` of pupils are recorded as
+eligible for free school meals in the DfE performance tables.
+
+Those two figures cannot both describe the same children. If every FSM-eligible
+child lived in a deprived neighbourhood, those neighbourhoods would need an FSM
+rate of `r sprintf("%.0f%%", city_fsm / sh_dep)` — nearly nine in ten. Nothing
+in the published record comes close to that.
+
+```{r idaci-proxy-arith}
+tibble::tibble(
+  `If deprived areas have an FSM rate this many times the rest` = c(2, 3, 4, 5),
+  `then this share of FSM children live in them` =
+    sprintf("%.0f%%", 100 * conc(c(2, 3, 4, 5)))) %>%
+  tbl(caption = "What the arithmetic allows, given that 27% of the city's children live in the most deprived 30% of neighbourhoods")
+```
+
+**Even on a generous assumption the answer is around half.** A deprivation
+gradient of three to one — steeper than most of what is observable at school
+level — still leaves `r sprintf("%.0f%%", 100 * conc(3))` of FSM children living
+outside the areas the analysis calls deprived. The reason is simply that
+deprived neighbourhoods hold a minority of the city's children, so even a high
+rate within them accounts for only part of the total.
+
+The school-level figures point the same way from the other direction.
+
+```{r idaci-proxy-schools}
+fsm_sch %>%
+  transmute(School = name, PAN = pan, `% FSM` = sprintf("%.1f%%", fsm)) %>%
+  arrange(desc(`% FSM`)) %>%
+  tbl(caption = "Published free school meals rate by school, DfE performance tables")
+```
+
+**No school in the city is majority-FSM**, including the one whose catchment is
+by far the most deprived: Brighton Aldridge sits at
+`r sprintf("%.0f%%", max(fsm_sch$fsm))`. So even the most deprived catchment in
+Brighton contains a majority of children who are not FSM-eligible. And at the
+other end, the least deprived intakes are still around
+`r sprintf("%.0f%%", min(fsm_sch$fsm))` FSM — roughly one child in six, in the
+parts of the city the debate treats as comfortable.
+
+::: {.callout-important}
+## Why this matters for how the city argues about deprivation
+
+Public discussion of disadvantage in Brighton is heavily place-based, and
+Whitehawk in particular carries a great deal of the argument. The area is
+genuinely among the most deprived in the country and nothing here disputes
+that. But the inference usually drawn from it — that addressing disadvantage
+means addressing particular neighbourhoods — does not follow from these numbers.
+
+**An intervention targeted at the most deprived 30% of neighbourhoods would
+miss roughly half the city's disadvantaged children**, and would reach a
+majority of children in those neighbourhoods who are not FSM-eligible. Both
+errors are large, and they compound: place-based targeting is simultaneously
+too narrow and too blunt.
+
+That is a point in favour of the free school meals criterion the council
+actually uses (@sec-fsm-open), and the debate around it has not much noticed:
+**it targets children rather than places, so it does not have this problem.**
+The criterion is contested on other grounds, but on this one it is doing
+something area-based policy cannot.
+
+It is also a caution about this document. Where a result here compares
+deprivation *bands* — the segregation index, the catchment profiles — the
+proxy is doing legitimate work, because the bands really do differ. Where a
+figure is stated as a level, "X% deprived" means **from a deprived
+neighbourhood**, not poor. Those are different quantities, and only the first
+is measurable from published data.
+:::
 ## The 2024 redraw moved deprivation out of Longhill's catchment
 
 The same calculation under both maps shows what the change did

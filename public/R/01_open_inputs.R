@@ -392,6 +392,9 @@ perf <- panel %>%
   summarise(att8 = mean(ATT8SCR, na.rm = TRUE),
             p8 = mean(suppressWarnings(as.numeric(P8MEA)), na.rm = TRUE),
             va_lever = mean(residual_ATT8SCR_imputed, na.rm = TRUE),
+            # Published share of pupils eligible for free school meals at
+            # any point in the last six years - the DfE disadvantage measure.
+            fsm = mean(suppressWarnings(as.numeric(PTFSM6CLA1A)), na.rm = TRUE),
             .groups = "drop")
 
 # (c) uses the council's published first-preference counts, averaged over
@@ -418,6 +421,7 @@ attract <- SCHOOLS_OPEN %>%
     att8 = if_else(is.na(att8), mean(att8, na.rm = TRUE), att8),
     p8 = if_else(is.na(p8) | is.nan(p8), NA_real_, p8),
     va_lever = if_else(is.na(va_lever) | is.nan(va_lever), NA_real_, va_lever),
+    fsm = if_else(is.na(fsm) | is.nan(fsm), NA_real_, fsm),
     prefs_per_place = if_else(is.na(prefs_per_place),
                               min(prefs_per_place, na.rm = TRUE), prefs_per_place),
     W_equal  = 1,
