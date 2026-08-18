@@ -2456,6 +2456,68 @@ the question does not arise.
 :::
 
 
+### The "City Child", and why the city did not accept it {#sec-city-child}
+
+The 2024/25 consultation proposed a way out of that trade-off, and gave it a
+name. If children could be distributed more widely across Brighton — the **"City
+Child"** framing — the system could in principle have both a socially mixed
+intake everywhere *and* schools that filled. The tension above would dissolve,
+because no school would depend on the neighbourhood around it.
+
+The consultation response was strongly against, and the proposal did not survive
+in that form. That outcome is itself evidence, and it deserves to be treated as
+such rather than as an obstacle that better communication would have removed.
+
+**The preference for a local school is not a Brighton peculiarity, and this
+model measures it.** The distance-decay parameter is the formal expression of
+exactly that preference, and it is large: families discount schools sharply as
+journey time rises, which is why @sec-brightopia can reproduce most of the
+city's allocation pattern from geography alone. That parameter is not an
+artefact of Brighton's social composition. Distance decay of similar strength is
+found in essentially every spatial interaction model of school choice, in every
+kind of city, over seventy years of the literature (@sec-provenance). A model
+without it does not fit anywhere.
+
+This matters for how the consultation response was characterised. Opposition to
+sending children further was at times described as advantaged families
+protecting a positional good. Some of that may have been present — this analysis
+cannot say. But **the underlying preference is universal rather than sectional**,
+and a policy premised on families not holding it was premised on something the
+evidence base does not support. The consultation did not reveal an unusually
+selfish city. It revealed an ordinary one.
+
+::: {.callout-note}
+## One argument I cannot support from this data
+
+It is sometimes argued that longer journeys damage attendance, and that Brighton's
+attendance problem is therefore an argument for local schooling. **The published
+figures do not show that**, and the point should not be made on their basis.
+
+Across the city's secondaries, absence correlates with a school's proportion of
+disadvantaged pupils at **0.90**, and with the mean journey its pupils make at
+only **0.32** — and the second is confounded, because the schools with the
+longest journeys are also among the most deprived. On this evidence attendance is
+a deprivation story, not a distance story.
+
+That does not settle it. School-level averages cannot detect a within-school
+relationship, and a pupil-level analysis of absence against journey time could
+find one that this cannot. It is a reasonable hypothesis and a testable one. But
+as things stand it is a hypothesis, and the case for local schooling does not
+need it — the distance-decay evidence carries that argument on its own, and is
+much stronger.
+:::
+
+**Where this leaves the council.** The trade-off described above is real, and the
+"City Child" route around it has been tested against public opinion and rejected.
+That leaves the authority choosing between the two goals rather than
+transcending them, and doing so in a city that has now said fairly clearly which
+way it leans on distance. A policy that requires families to behave differently
+from families everywhere else is not a policy; it is a wish. **The remaining
+options are the ones that work with the preference rather than against it** —
+which is to say, decisions about how large the eastern schools should be, and
+what the city is prepared to accept about their intakes.
+
+
 # King's, Hove Park, and the other end of the city {#sec-kings-open}
 
 Almost everything in this document concerns Longhill and the east. The published application history contains a second pattern, at the opposite end of the city, which is at least as consequential and has had almost none of the attention.
