@@ -1672,9 +1672,62 @@ maths, science and languages department whether its year group is 90 or 240.
 
 ## What size of school does the demand support?
 
+
+::: {.callout-note}
+## What "1,728 runs" means — and what it does not
+
+The figures in this section come from running the model many times. It is worth
+saying plainly what is being varied, because the phrasing invites a
+misunderstanding.
+
+**Nothing here is random.** There is no simulation, no draw, no Monte Carlo, and
+no stochastic element of any kind. Every run is the same deterministic model,
+evaluated once at one specific combination of settings. Run it twice with the
+same settings and you get the same answer to the last decimal.
+
+What varies is the **assumptions**, and they are varied exhaustively rather than
+sampled. The model has three inputs that published data cannot pin down, so
+each is stepped across its plausible range and every combination is evaluated:
+
+```{r envelope-grid}
+tibble::tibble(
+  Input = c("Distance decay (β)", "Catchment priority (γ)",
+            "Attractiveness specification", "Longhill site",
+            "Entry year"),
+  `Values tried` = c(
+    sprintf("%d, from %.1f to %.1f", length(env$betas), min(env$betas), max(env$betas)),
+    sprintf("%d, from %.1f to %.1f", length(env$gammas), min(env$gammas), max(env$gammas)),
+    sprintf("%d (%s)", length(env$w_specs), paste(env$w_specs, collapse = ", ")),
+    "2 (Ovingdean, Elm Grove)",
+    sprintf("%d (%s)", length(unique(env$envelope$entry_year)),
+            paste(sort(unique(env$envelope$entry_year)), collapse = ", "))),
+  n = c(length(env$betas), length(env$gammas), length(env$w_specs), 2,
+        length(unique(env$envelope$entry_year)))) %>%
+  select(-n) %>%
+  tbl(caption = sprintf("The grid. Multiplying the counts gives %s combinations.", fmt(nrow(env$envelope))))
+```
+
+`r length(env$betas)` × `r length(env$gammas)` × `r length(env$w_specs)` × 2 ×
+`r length(unique(env$envelope$entry_year))` = **`r fmt(nrow(env$envelope))`**. That is the
+whole of it: a full factorial grid, not a sample from one.
+
+**Why do it this way.** With individual admissions records these three inputs
+would be estimated, and the model would be run once with the fitted values. That
+is not available (@sec-calibration-open), so instead of guessing a value and
+presenting a single number as though it were known, the analysis reports what
+happens across *every* value the evidence permits. A conclusion that holds at
+all `r fmt(nrow(env$envelope))` combinations does not depend on the guess. One
+that holds at some and not others is flagged as depending on it, and the
+variance table below says which input it depends on most.
+
+So the ranges quoted throughout are **not confidence intervals** and carry no
+probability. They are the span of answers the model gives across the assumptions
+that cannot be ruled out — which is a weaker claim than a confidence interval,
+and an honest one.
+:::
+
 ```{r pan-fill}
 #| fig-cap: "Modelled fill rate by admission number. Green is a school recruiting to its published number; red is a school that is not. Built to match the equivalent figure in the record-calibrated analysis, so the two can be read side by side."
-#| fig-height: 4
 
 PAN_LADDER <- c(270, 240, 210, 180, 150, 120)
 
