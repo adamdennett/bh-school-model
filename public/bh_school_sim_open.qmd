@@ -808,6 +808,22 @@ Before modelling anything, a question that can be answered from published data
 alone: does demand for a school track its **headline attainment**, or the
 **value it adds** to the pupils it teaches?
 
+::: {.callout-note}
+## The council's own guidance points families at one of these two measures
+
+This is not only a question about how families happen to behave. The council's
+*Secondary school admissions guide 2026–2027* tells applicants what to look at,
+and the performance signals it names — National Curriculum test results, public
+exam results, Ofsted — are all measures of raw attainment. It nowhere mentions
+value added, Progress 8, or the fact that a school's results substantially
+describe the children who sit them.
+
+So whatever this section finds about how families choose, the authority is
+actively directing them towards one of the two measures. That is examined in
+full at @sec-admissions-guide, once the evidence on which measure predicts
+demand is on the table.
+:::
+
 Both are published. Attainment 8 appears in the DfE performance tables.
 Value-added — how a school's results compare with what its intake would
 predict — comes from the contextual models in
