@@ -1089,7 +1089,7 @@ average for demand.
 ::: {.callout-note}
 ## Which lever this leaves unpulled
 
-The companion report *How to Pull the Right Lever* finds that **absence** is by
+The companion report [*How to Pull the Right Lever*](https://adamdennett.github.io/school_attainment_tool/index.html) finds that **absence** is by
 some distance the most powerful predictor of attainment available to a school
 in England — with a coefficient around 2.6 times that of concentrations of
 disadvantage — and that Brighton & Hove had the second worst absence rate in
@@ -2804,6 +2804,14 @@ only **0.32** — and the second is confounded, because the schools with the
 longest journeys are also among the most deprived. On this evidence attendance is
 a deprivation story, not a distance story.
 
+
+**Absence and deprivation are not competing explanations.** Absence is a large
+part of the mechanism through which deprivation affects attainment, which is why
+the two correlate as strongly as they do here. The relationship is set out in
+detail in [*How to Pull the Right Lever*](https://adamdennett.github.io/school_attainment_tool/index.html),
+which examines it far more carefully than this report needs to — the point here
+is only that Brighton's school-level absence figures cannot be read as evidence
+about journey times.
 That does not settle it. School-level averages cannot detect a within-school
 relationship, and a pupil-level analysis of absence against journey time could
 find one that this cannot. It is a reasonable hypothesis and a testable one. But
