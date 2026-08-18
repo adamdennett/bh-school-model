@@ -127,7 +127,7 @@ Three tiers of material sit behind this report, and they are not equivalent.
 
 **Evidence submitted to the Schools Adjudicator.** In determining the objections to the 2026/27 arrangements, the adjudicator required the council to produce a substantial evidence bundle — catchment boundaries, pupil forecasts, indices of deprivation, and preference and allocation counts by catchment area. As one of the objectors I received that bundle from the adjudicator in the ordinary course of the case. It was not published.
 
-**It should have been.** Every table in it is aggregated to catchment or school level. None of it is disclosive: there is no individual, no address, and no cell small enough to identify a family. It is exactly the kind of material that lets residents, schools and researchers examine an admissions arrangement on the same evidence the authority uses — and there is no obvious reason it could not sit on the council's website alongside the factsheets that already do. **A recurring theme of this report is that decisions are being argued out on incomplete public evidence; this bundle is a case where the evidence exists, is safe to release, and simply has not been.** Publishing it would cost nothing and would remove a good deal of the uncertainty flagged throughout these pages.
+**It should have been.** Every table in it is aggregated to catchment or school level. None of it is disclosive: there is no individual, no address, and no cell small enough to identify a family. A short list of tables in the same spirit appears at @sec-data-requests. It is exactly the kind of material that lets residents, schools and researchers examine an admissions arrangement on the same evidence the authority uses — and there is no obvious reason it could not sit on the council's website alongside the factsheets that already do. **A recurring theme of this report is that decisions are being argued out on incomplete public evidence; this bundle is a case where the evidence exists, is safe to release, and simply has not been.** Publishing it would cost nothing and would remove a good deal of the uncertainty flagged throughout these pages.
 
 **Individual pupil records** are a different matter entirely, and are treated differently here. Where this document refers to what a calibrated model could produce, that modelling would rest on record-level data that we know the council holds, but that is not in the public domain. At points I may reference where the public data could be enhanced with a record-level model, and I would be happy to assist the council in running such a model should they want to work with me to do so — as an ONS accredited safe researcher, this is something I would be glad to help with while working to publish outputs in a non-disclosive way. **Nothing in this report is derived from record-level data.** No derived tables or fitted objects are included in this repository or its outputs.
 
@@ -949,7 +949,7 @@ The two are easy to conflate because they usually point the same way. Where they
 
 If catchment membership were the psychological anchor the argument requires, neither pattern should hold. **A redraw that assumes families will follow the map, when the map has just moved and they did not, is relying on a mechanism the evidence does not obviously support** — and it is the mechanism, not the priority, that the case for redrawing Longhill's catchment mostly rests on.
 
-Testing this properly needs first preferences by small area across the boundary change, which the council holds. It is a contained question with a direct bearing on whether a redraw would work at all.
+Testing this properly needs first preferences by small area across the boundary change, which the council holds. It is a contained question with a direct bearing on whether a redraw would work at all. *It is item three on the list at @sec-data-requests.*
 :::
 
 ### Which schools actually ration places
@@ -2606,7 +2606,7 @@ That is a specific and modest ask of the council. What would most improve this
 analysis is an **origin-destination matrix of Year 7 preferences and offers, by
 area of residence and destination school**. Aggregated to catchment or ward
 level it carries no disclosure risk, and it would replace the widest band of
-uncertainty here with a measurement.
+uncertainty here with a measurement. It is item one at @sec-data-requests.
 :::
 
 ::: {.callout-caution}
@@ -2738,7 +2738,7 @@ There is a smaller ask that could be met immediately, and it is worth separating
 
 When the adjudicator determined the 2026/27 objections, the council produced an evidence bundle: catchment boundaries, pupil forecasts, deprivation indices, and **preference and allocation counts by catchment area** — which school each catchment's children named, in what order, and where they were offered places. As set out in @sec-data-provenance, that material reached me as an objector to the case but was never published.
 
-It is aggregated to catchment level throughout. Nothing in it identifies anyone. And it answers several of the questions this report has had to leave open — a catchment-level origin–destination matrix is the very thing @sec-envelope identifies as the largest single source of uncertainty here.
+It is aggregated to catchment level throughout. Nothing in it identifies anyone. And it answers several of the questions this report has had to leave open — a catchment-level origin–destination matrix is the very thing @sec-envelope identifies as the largest single source of uncertainty here. *It is item two at @sec-data-requests.*
 
 **Publishing that bundle would cost the council nothing and would let every party to this debate argue from the same evidence.** At present the authority, the objectors and the adjudicator have seen it; residents, governors and anyone reading this document have not. For a decision that will shape the city's schools for fifteen years, that asymmetry is hard to justify — and unlike the pupil-record request above, removing it requires no one's permission but the council's own.
 
@@ -2755,6 +2755,92 @@ The demographic reality makes this urgent rather than optional. The cohort is fa
 That is what this work is for. It is not an argument for any particular outcome for Longhill, or for any school — the results here point in different directions depending on what the city decides it values, and the report says so wherever that happens. It is an argument for having the conversation with the whole picture in view, and for doing so while there is still time for the answer to matter.
 
 The offer stands: the model, the code, and the analysis are open, and the parts that need records will be done properly and shared if the records are made available.
+
+## A specific list of tables the council could simply publish {#sec-data-requests}
+
+Everything above is framed as access to records, which needs arrangements. Most
+of what this analysis lacks does not. It is a short list of **aggregate tables**
+— nothing at pupil level, nothing disclosive, most of them a single query
+against systems the admissions process already runs.
+
+They are set out below with the question each would answer, because a data
+request without a purpose is easy to decline and easy to deprioritise.
+
+```{r data-requests}
+tibble::tribble(
+  ~Table, ~Granularity, ~`What it would settle`,
+  "Offers by school × IDACI band",
+  "School × decile band, one row per year",
+  "Which schools admit more or fewer disadvantaged children than their size implies. Cannot currently be computed from any published source, and it is the single most useful table on this list.",
+
+  "Preferences and offers by catchment area",
+  "Catchment × school × preference rank",
+  "Whether catchment priority does anything at each school, and where each school's applicants actually live. Already produced for the Adjudicator in 2025 but never published.",
+
+  "First preferences by small area, before and after 2024",
+  "LSOA or ward × school × year",
+  "Whether being placed in a catchment changes what families name — the assumption the case for redrawing rests on, and which nothing published can test.",
+
+  "Children offered a place outside the authority",
+  "Home catchment × destination authority",
+  "Why roughly a fifth of the city's children never enter its state secondaries, which is the largest single quantity in this analysis.",
+
+  "Free school meals eligibility by catchment",
+  "Catchment × year",
+  "How the FSM criterion's reach changes as national eligibility narrows, and which catchments lose most.",
+
+  "Sibling links by school",
+  "School × year, counts only",
+  "How much of each school's intake is already determined before any policy change, which bounds what any reform can move.",
+
+  "Appeals and their outcomes",
+  "School × ground × outcome × year",
+  "Where the arrangement is producing outcomes families successfully contest, which is a direct measure of where it is failing."
+) %>%
+  tbl(caption = "Aggregate tables the council could publish without disclosure risk, and the question each would answer")
+```
+
+None of these is a research dataset. They are the by-products of running an
+admissions round, aggregated to a level at which no individual is identifiable.
+Several already exist as internal management information.
+
+::: {.callout-important}
+## Publishing this would help the council more than it helps me
+
+It is worth being direct about the culture this sits in. Almost every useful
+figure in this report came out either because the Schools Adjudicator required
+it, or because someone asked under the Freedom of Information Act. That is a
+poor way to run an evidence base, and the cost falls in three places.
+
+**On the council.** An authority that releases data only under compulsion ends
+up arguing its case with whatever it has released, which is rarely the strongest
+material it holds. The council's own leakage assumption for Longhill is a good
+example: it is broadly right, and it looks arbitrary because the evidence for it
+was never published alongside it. Publishing would have made the same decision
+easier to defend.
+
+**On schools.** A head teacher cannot see how their intake compares with the
+city, how their catchment's demography is moving, or how many of their
+applicants named them first. Those are the basic facts of running a school in a
+falling market, and at present each school sees only its own corner. Several of
+the objections in the 2026/27 case read as schools reasoning from partial
+information — which is not a criticism of them.
+
+**On everyone else.** Consultations attract the arguments of whoever can
+assemble numbers. Where the evidence is closed, that means whoever is most
+determined rather than most representative, and the authority then has to
+adjudicate between claims it cannot easily check.
+
+The alternative is not onerous. **A single annual publication — the tables above,
+released alongside the allocation factsheets that already appear each March —
+would let every party to these debates argue from the same evidence.** It would
+cost a day of officer time a year. It would remove most of the caveats in this
+document, and it would make the next reorganisation a conversation about what
+the city wants rather than about whose numbers to believe.
+
+I would rather this analysis were made redundant by better published data than
+be the only place some of these questions get asked.
+:::
 
 # Testable predictions
 
