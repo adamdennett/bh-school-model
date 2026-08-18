@@ -725,16 +725,29 @@ what published statistics do not provide — the identification problem set out
 in @sec-method. So this bundle can construct $C_j$, as it does above, but
 cannot estimate its coefficient.
 
-For what it is worth, the same test run on individual preference records finds
-$\delta$ statistically indistinguishable from zero, no improvement in fit, and
-essentially no change in the distance parameter, across every decay value
-tried. The likely reason is that a production-constrained model with origin
-fixed effects already handles competition twice over, and that competing-
-destinations corrections were built for large interaction systems — inter-city
-migration, regional retail catchments — with far more variation in spatial
-structure than ten schools inside nine miles. That result cannot be reproduced
-from open data, so it is reported here as context rather than relied on: the
-descriptive separation above carries the argument on its own.
+There are good reasons to expect $\delta$ to come out close to zero here, and
+they are worth setting out because they are structural rather than empirical.
+
+A production-constrained model with origin fixed effects already handles
+competition twice over: the balancing factor $A_i$ normalises each origin's
+flows across all destinations, so a school's accessibility relative to its
+rivals is partly absorbed before any explicit competition term is added.
+Competing-destinations corrections were developed for large interaction systems
+— inter-city migration, regional retail hierarchies — where destinations vary
+enormously in how clustered they are. **Ten schools inside nine miles offer very
+little of that variation to work with.** In a system this compact, $C_j$ is close
+to collinear with the accessibility already captured, and a coefficient on it
+has little left to explain.
+
+**That is an expectation, not a result.** Confirming it needs individual
+preference records, for the identification reason above, and this analysis has
+not been able to test it. If $\delta$ turned out to be materially different from
+zero, the distance parameter reported here would be biased and the Brightopia
+figures would need revisiting. It is one of the assumptions most worth checking
+if the records become available, and it is listed at @sec-data-requests for that
+reason.
+
+The descriptive separation above does not depend on it either way.
 
 ```{r brightopia-beta}
 #| fig-cap: "Longhill in Brightopia, at every distance decay tested. Nothing here depends on how good any school is thought to be."
@@ -2097,7 +2110,7 @@ Each pair splits into a less deprived and a more deprived half, Hove Park taking
 
 Public argument during the consultation held that having some dual and some single-school catchments is unfair, because families in a dual catchment get a *choice* of two schools while families in a single-school catchment get none. Two things are worth saying about it.
 
-**In an oversubscribed catchment there is no choice, only chance.** Naming a school does not secure it; where places are short the tiebreaker decides, and the tiebreaker is random. A dual catchment does not confer two choices. It confers one preference and a probability. How often that bites can only be measured on individual preference and offer records, which are not published — work on those records finds it bites hard at one school in the pair and essentially not at all at the others.
+**In an oversubscribed catchment there is no choice, only chance.** Naming a school does not secure it; where places are short the tiebreaker decides, and the tiebreaker is random. A dual catchment does not confer two choices. It confers one preference and a probability. How often that bites can only be measured on individual preference and offer records, which are not published. The expectation is that it bites hard at the oversubscribed school in a pair and essentially not at all at the others, since a school that turns nobody away cannot be running a lottery - and -rules-open shows from the council's own guide which schools are in which position.
 
 **The pairing does redistributive work that splitting would undo.** This is the part the argument misses. A shared catchment mixes two populations the geography would otherwise separate, and the tables above show the direction: each pair splits into a more and a less deprived half, so the pair is holding together a social range that single-school catchments would divide.
 
