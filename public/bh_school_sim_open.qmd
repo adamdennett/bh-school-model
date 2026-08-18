@@ -145,6 +145,56 @@ This matters for one reason. **The model in this report is not novel, and that i
 
 What *is* unusual is the constraint: building it entirely from published data, and being explicit at every point about what that costs. Where the published sources cannot support a conclusion, this report says so rather than reaching for one.
 
+### How this was built, and the part AI played {#sec-ai}
+
+This analysis was produced in an extended working collaboration with Claude
+(Anthropic), and it is worth being straightforward about the division of
+labour, both because readers are entitled to know and because the collaboration
+is itself the subject of research.
+
+**What the AI did.** Wrote and debugged the R that assembles the inputs, fits
+the models, designs the catchments and renders these documents; ran the
+routing over the OSM and GTFS networks; carried out the parameter sweeps;
+parsed the evidence bundles; built the tables and figures; and drafted much of
+the prose. It also caught several of its own errors on re-checking, and made
+some that had to be caught by me.
+
+**What I did.** Set the questions, supplied the domain knowledge about
+Brighton's schools and the policy history, chose the methods, judged what the
+results meant, and verified the output. Repeatedly, the substantive corrections
+came from knowing the city: that a catchment had been drawn wrongly, that a
+ward code was mismatched, that a figure was implausible for a place I know. The
+model is standard, but knowing whether an answer is *credible* is not something
+the analysis can do for itself.
+
+**Why it matters that this is said.** The work is a contribution to
+[AI4CI](https://ai4ci.ac.uk/), a research programme examining how artificial
+intelligence can strengthen collective intelligence — the capacity of groups,
+institutions and communities to reason well together. This report is a
+reasonable specimen of what that looks like in practice. It covers ground I
+would not have covered alone: not because the reasoning was beyond me, but
+because the sheer volume of implementation — several thousand lines of code,
+dozens of model configurations, repeated rebuilds after each correction — would
+have consumed the time available many times over.
+
+The direction of the assistance is worth noting. **It did not replace expertise;
+it removed the friction between having an idea and testing it.** Questions that
+would once have been shelved as too costly to answer — what if the catchments
+were redrawn optimally, what if every school shrank, what does the deprivation
+profile look like under nine different specifications — became cheap enough to
+just ask. Several of the findings here exist only because a question that would
+previously have cost a fortnight cost twenty minutes.
+
+That cuts both ways, and the failure mode is real: it is now equally cheap to
+produce confident, well-formatted analysis that is wrong. Most of the errors
+corrected during this work were caught because a result contradicted something I
+knew about the city, not because anything in the pipeline flagged it. **The
+expert judgement is not an optional layer on top of the automation; it is the
+part that makes the automation safe to use.** An analysis of this kind produced
+without someone who knows the subject would be faster, longer, and considerably
+more dangerous.
+
+
 ::: {.callout-important}
 ## An offer to the council, and why it matters now
 
