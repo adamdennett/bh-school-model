@@ -150,10 +150,15 @@ here appears in every spatial interaction model of school choice, in every kind
 of city, over seventy years. A policy premised on families not holding that
 preference is premised on something no evidence base supports.
 
-**Reducing other schools' admission numbers may be a more powerful instrument
-for Longhill than anything done to Longhill.** This is the least certain finding
-here and the one with the largest potential effect, and published data cannot
-resolve it.
+**No single instrument is sufficient, and they behave very differently over
+time.** Reducing other schools' admission numbers produces a gain to Longhill
+that is largest in the first year and fades as the cohort shrinks. Retaining
+children who currently leave the city is smaller at first and more durable.
+Moving the school and redrawing its catchment are worth little separately and
+considerably more together. **The instruments compose; none substitutes for the
+others, and the ones that look strongest in the first year are not the ones that
+still work in the tenth.** How large each is cannot be settled from published
+data, which is what recommendation 1 is about.
 
 ## What is driving the sorting
 
