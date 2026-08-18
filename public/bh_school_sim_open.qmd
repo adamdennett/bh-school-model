@@ -2551,6 +2551,107 @@ This is why the levers in the rest of this report do not reach Hove Park. Catchm
 
 Eleven schools is eleven observations, and attractiveness, attainment and intake are entangled. The claim worth defending is the ordering one: families' revealed ordering matches raw attainment far more closely than it matches the intake-adjusted contribution, and Hove Park is among the schools where those two orderings diverge most.
 
+
+### Which schools the conflation flatters, and which it buries {#sec-ranking-flip}
+
+The clearest way to see what is at stake is to rank the schools twice — once on
+the measure families use, once on the measure that isolates what a school
+contributes — and look at which ones move.
+
+```{r rank-flip}
+rk <- inp$attract %>%
+  filter(!is.na(va_lever), !is.na(att8)) %>%
+  mutate(`Rank on Attainment 8` = rank(-att8),
+         `Rank on contribution` = rank(-va_lever),
+         Movement = `Rank on Attainment 8` - `Rank on contribution`) %>%
+  arrange(desc(Movement)) %>%
+  transmute(School = name,
+            `Attainment 8` = round(att8, 1),
+            `Rank on Attainment 8` = round(`Rank on Attainment 8`),
+            `Intake-adjusted` = round(va_lever, 2),
+            `Rank on contribution` = round(`Rank on contribution`),
+            `Places moved` = sprintf("%+d", round(Movement)))
+rk %>% tbl(caption = "The same schools ranked on the league-table measure and on what they add. Positive movement means a school does better than its headline score suggests.")
+```
+
+```{r rank-flip-helpers}
+#| include: false
+vr  <- function(s) round(rk[["Rank on contribution"]][rk$School == s])
+vra <- function(s) round(rk[["Rank on Attainment 8"]][rk$School == s])
+```
+
+**Brighton Aldridge moves furthest.** Last of eleven on Attainment 8 and
+`r vr("Brighton Aldridge Community Academy")`th
+on contribution — a school with the most disadvantaged intake in the city
+(`r sprintf("%.0f%%", inp$attract$fsm[inp$attract$name == "Brighton Aldridge Community Academy"])`
+FSM) doing more for its pupils than most schools with far easier intakes.
+Portslade Aldridge moves the same way.
+
+**Cardinal Newman and Patcham move furthest the other way**, each falling five
+places. Both look strong in the league tables and both sit below the city
+average once intake is accounted for.
+
+**Hove Park sits above Cardinal Newman on contribution**
+(`r sprintf("%.2f", inp$attract$va_lever[inp$attract$name == "Hove Park School"])`
+against
+`r sprintf("%.2f", inp$attract$va_lever[inp$attract$name == "Cardinal Newman Catholic School"])`)
+while being chosen at roughly half the rate.
+
+::: {.callout-important}
+## This is a communications problem before it is an admissions problem
+
+Attainment 8 correlates with a school's proportion of disadvantaged pupils at
+**`r sprintf("%.2f", cor(inp$attract$att8, inp$attract$fsm, method = "spearman", use = "complete.obs"))`**.
+The intake-adjusted measure correlates with it at
+**`r sprintf("%.2f", cor(inp$attract$va_lever, inp$attract$fsm, method = "spearman", use = "complete.obs"))`**.
+
+The first number is the whole difficulty in one line. **A school's headline
+score is very largely a description of who walks through its doors**, and
+families choosing on it are — without meaning to — choosing a peer group and
+calling it a school. Every mechanism in this report then amplifies that: the
+schools with the most disadvantaged intakes get the lowest headline scores, are
+chosen least, and become more disadvantaged still.
+
+**No admissions policy reaches this.** Catchments, admission numbers, open
+allocation and relocation all change *who is in the queue*. None of them changes
+what parents believe they are choosing between. An authority that moves children
+around to equalise intakes, while leaving the measure families use untouched, is
+treating the symptom every year and never the cause.
+
+What would reach it is publication. **The council could publish an
+intake-adjusted measure alongside the raw one**, in the admissions booklet where
+families actually look, with a plain sentence explaining that a school's
+headline grade largely reflects who attends it. That is not a costly
+intervention. It is a page in a document the authority already produces, and it
+is the only lever in this entire report that acts on the demand side rather than
+shuffling supply.
+
+It would also be uncomfortable, because it would say publicly that some
+well-regarded schools add less than their reputation implies, and that
+Brighton Aldridge — the school the city worries about — is doing better by its
+pupils than most.
+:::
+
+**Two qualifications, because the argument is stronger with them than without.**
+
+The first is that **the popular schools are not simply misjudged.** Dorothy
+Stringer and Varndean rank
+`r vr("Dorothy Stringer School")`st and
+`r vr("Varndean School")`nd on contribution
+as well as near the top on attainment. Families naming them are not making a
+mistake, and any messaging that implied otherwise would be wrong and would be
+seen to be wrong. The conflation misleads about the *bottom* of the table far
+more than the top.
+
+The second is that **it does not rescue every undersubscribed school.** Longhill
+is `r vr("Longhill High School")`th on
+contribution as well as
+`r vra("Longhill High School")`th on
+attainment. Its problem is not that families have misread a good school; on this
+evidence they have read it accurately. That is worth stating plainly, because
+the case for Longhill in this report rests on demography and geography, not on
+a claim that the school is secretly excellent.
+
 # What if other schools shrink too? {#sec-pan-open}
 
 Every scenario so far treats Longhill as the only school whose size is in
