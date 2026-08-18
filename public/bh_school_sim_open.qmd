@@ -3312,7 +3312,15 @@ tibble::tribble(
 
   "Appeals and their outcomes",
   "School × ground × outcome × year",
-  "Where the arrangement is producing outcomes families successfully contest, which is a direct measure of where it is failing."
+  "Where the arrangement is producing outcomes families successfully contest, which is a direct measure of where it is failing.",
+
+  "Children allocated a school they did not name, by preferences used",
+  "Number of preferences expressed × home catchment × year",
+  "Whether these families failed to engage or engaged and aimed badly. The distinction decides whether the remedy is outreach or better guidance about which schools are realistically obtainable, and nothing published distinguishes them.",
+
+  "Distance from home to allocated school, where no preference was met",
+  "Banded distance × year, counts only",
+  "Whether the nearest-school-with-a-place rule the council described to the Adjudicator is borne out in practice. It is the authority's own stated policy and at present no one outside it can check whether the allocations match."
 ) %>%
   tbl(caption = "Aggregate tables the council could publish without disclosure risk, and the question each would answer")
 ```
@@ -3320,6 +3328,14 @@ tibble::tribble(
 None of these is a research dataset. They are the by-products of running an
 admissions round, aggregated to a level at which no individual is identifiable.
 Several already exist as internal management information.
+
+The last two are worth a word, because they are the only items on this list that
+would let an outside reader check something the authority has **stated**. The
+council has told the Adjudicator how unmatched children are placed, and it tells
+families in its guide to use all four preferences. Neither claim can currently be
+verified from anything published. Publishing two small count tables would make
+both checkable, and an authority confident in its own process loses nothing by
+allowing that.
 
 ::: {.callout-important}
 ## Publishing this would help the council more than it helps me
