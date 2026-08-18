@@ -977,6 +977,15 @@ At the oversubscribed schools, admission criteria decide who gets in. Catchment 
 That splits the policy question in two. For the oversubscribed half, arguments about fairness of access are substantive and the instruments in the Admissions Code work. **For Longhill, no admissions instrument reaches the problem, because there is no rationing to adjust.** Its intake is determined entirely by how many families name it, which is a question about the school and how it is regarded, not about the arrangement.
 
 Every scenario in this report that works through catchment priority is therefore working on the half of the city where it does nothing.
+
+**The council states this itself, in the admissions guide.** In the per-school
+listing, Brighton Aldridge, Hove Park, Longhill, Patcham and Portslade Aldridge
+each carry the line *"All preferences allocated unless offered a higher
+preference"* - which is the council confirming, in the document it sends to every
+applying family, that those schools admit everyone who names them. Blatchington
+Mill, Dorothy Stringer and Varndean instead publish a breakdown by criterion,
+because for them the criteria actually decide something. The two-systems finding
+is not an inference from modelling; it is printed in the guide.
 :::
 
 If that is right, it changes the policy conclusion entirely. **Redrawing Longhill's catchment cannot work by letting more children in — nobody is being turned away.** It can only work by changing which school families *name*. That is a much weaker and slower mechanism, and any proposal resting on a redraw needs to be honest about which of the two it is relying on.
@@ -2651,6 +2660,70 @@ attainment. Its problem is not that families have misread a good school; on this
 evidence they have read it accurately. That is worth stating plainly, because
 the case for Longhill in this report rests on demography and geography, not on
 a claim that the school is secretly excellent.
+
+### What the council actually tells parents to look at {#sec-admissions-guide}
+
+This is not a hypothetical failure of communication. The council's own
+*Secondary school admissions guide 2026–2027* opens with a section called
+**"Before you make your application"**, which lists what a family should
+consider. Under *Look at the school's prospectus*, it says the prospectus will
+give an idea of the school's:
+
+> ethos and character · National Curriculum test results · public exam results
+
+Two of those three are raw attainment. The section goes on to recommend reading
+Ofsted reports, visiting schools, checking admission numbers and catchment,
+thinking about travel, and using all four preferences — all sensible, and much
+of it genuinely useful.
+
+**What the guide never mentions, anywhere, is that a school's exam results
+largely describe the children who sit them.** There is no reference to
+Progress 8, to value added, to contextual measures, or to any figure that
+separates what a school achieves from who it admits. The performance signals the
+guide names are exactly the ones that correlate with intake affluence at
+`r sprintf("%.2f", abs(cor(inp$attract$att8, inp$attract$fsm, method = "spearman", use = "complete.obs")))`.
+
+::: {.callout-important}
+## The authority is not a neutral party in this
+
+Every mechanism in this report runs on what families believe they are choosing
+between. The council does not merely observe those beliefs; **it is the single
+largest source of guidance shaping them.** This document goes to every family in
+the city applying for a Year 7 place, at the moment they are deciding.
+
+The guidance is not wrong in what it says. It is incomplete in a way that runs
+consistently in one direction. A parent following it exactly — visiting schools,
+reading prospectuses, comparing exam results, checking Ofsted — would arrive at
+the ordering this report shows families actually produce: one that tracks raw
+attainment closely and what schools contribute barely at all. The guide advises
+looking widely, including "schools outside your immediate area", which
+amplifies rather than moderates the effect.
+
+The result is an authority spending considerable effort on admission
+arrangements intended to even out school intakes, while its own advice to
+parents points at the measure that drives them apart. Those two activities work
+against each other, and only one of them is cheap to change.
+
+**And the format already exists.** Later in the same guide, every school gets a
+table: number on roll, preferences received at each rank, places offered under
+each admission criterion, and the admission number. The council is evidently
+willing and able to publish a per-school table in this document. What that table
+contains is admissions arithmetic and nothing about what a school does for the
+children in it.
+
+**Adding a column would do it** - an intake-adjusted measure beside the
+admission number, with a sentence saying that headline results substantially
+reflect the attainment of the children who join a school, and that a school with
+modest raw results may be adding a great deal. No new page, no new format, no
+new process. A column in a table the council already builds.
+
+It is worth being clear that this is not an accusation of intent. The guide
+reads like a document assembled to be helpful and complete on process, by people
+whose job is admissions rather than performance measurement. But the omission is
+consequential, the authority is the one making it, and it is the cheapest
+correction available anywhere in this report.
+:::
+
 
 # What if other schools shrink too? {#sec-pan-open}
 
