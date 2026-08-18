@@ -163,11 +163,11 @@ data, which is what recommendation 1 is about.
 ## What is driving the sorting
 
 **Families choose on headline attainment, not on what a school adds.** Demand
-tracks Attainment 8 at 0.94 and the intake-adjusted measure at 0.47. And
-Attainment 8 tracks a school's proportion of disadvantaged pupils at **-0.87**,
-so a headline score is very largely a description of who walks through the
-doors. Families choosing on it are choosing a peer group and calling it a
-school.
+tracks Attainment 8 at 0.94 and the intake-adjusted measure at 0.47. A headline
+score is very largely a description of the children who arrive rather than of
+what the school does with them — the intake-adjusted measure exists precisely to
+separate those two things, and it is the one families are not using. Choosing on
+the raw score means choosing a cohort and calling it a school.
 
 **The council's own guidance points them at it.** The admissions guide tells
 applicants to look at National Curriculum test results, public exam results and
@@ -2998,12 +2998,16 @@ while being chosen at roughly half the rate.
 ::: {.callout-important}
 ## This is a communications problem before it is an admissions problem
 
-Attainment 8 correlates with a school's proportion of disadvantaged pupils at
-**`r sprintf("%.2f", cor(inp$attract$att8, inp$attract$fsm, method = "spearman", use = "complete.obs"))`**.
-The intake-adjusted measure correlates with it at
-**`r sprintf("%.2f", cor(inp$attract$va_lever, inp$attract$fsm, method = "spearman", use = "complete.obs"))`**.
+Attainment 8 across the city's schools correlates with intake composition far
+more strongly than the intake-adjusted measure does — for free school meals
+eligibility, `r sprintf("%.2f", cor(inp$attract$att8, inp$attract$fsm, method = "spearman", use = "complete.obs"))`
+against `r sprintf("%.2f", cor(inp$attract$va_lever, inp$attract$fsm, method = "spearman", use = "complete.obs"))`.
 
-The first number is the whole difficulty in one line. **A school's headline
+That contrast is the whole difficulty in one line, and the mechanism behind it
+is prior attainment rather than disadvantage as such: schools whose intakes
+arrive with higher Key Stage 2 results post higher Key Stage 4 results, and free
+school meals eligibility is a visible marker of that intake difference rather
+than its cause. **A school's headline
 score is very largely a description of who walks through its doors**, and
 families choosing on it are — without meaning to — choosing a peer group and
 calling it a school. Every mechanism in this report then amplifies that: the
