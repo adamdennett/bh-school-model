@@ -102,6 +102,136 @@ Where a finding survives the whole range, no restricted data is needed to state
 it — and where one does not, that is reported too.
 :::
 
+# Executive summary {#sec-exec}
+
+Brighton & Hove is about to take a series of decisions about school admission
+numbers, catchment boundaries, free school meal priority and where one school
+sits. This report models the city's secondary system as a whole in order to ask
+what those decisions would actually do, and finds that several of them work
+differently from how they are being discussed.
+
+## The situation
+
+**The Year 7 cohort is falling, and not evenly.** Surplus capacity has to appear
+somewhere, and the schools it appears at are not the ones with the most room to
+absorb it. Decisions taken in the next two admissions rounds will compound
+across fifteen to twenty years.
+
+**The city already runs two admissions systems under one set of rules.** In the
+council's own admissions guide, five schools carry the line *All preferences
+allocated unless offered a higher preference*. Three publish a breakdown by
+criterion, because for them the criteria decide something. **At the first group
+the admission criteria are inert**: catchment, siblings and the tiebreaker
+allocate nothing, because nobody is turned away.
+
+## What follows for the policies under discussion
+
+**A catchment redraw cannot help an undersubscribed school by admitting more
+children, because it is not refusing any.** It can only work by changing which
+school families *name*. That is a slower and much weaker mechanism, and the
+evidence on the 2024 redraw does not obviously support it: families moved out of
+Longhill's catchment appear to have gone on naming it, and families moved in
+were not obviously converted.
+
+**Viability and social mix pull the same levers in opposite directions.** Every
+measure that would make an eastern school more viable — a redraw capturing more
+local families, a smaller admission number matched to local demand, retaining
+children who currently leave — works by binding the school more tightly to a
+deprived neighbourhood, and therefore concentrates disadvantage in its intake.
+Open allocation, the FSM criterion and the 2024 redraw all loosen that binding,
+spread disadvantage, and cost the eastern school. **A council can pursue a more
+socially mixed system, or strongly viable schools in its most deprived areas.
+The evidence does not show it can straightforwardly have both.**
+
+**The City Child route around that trade-off was tested against public opinion
+and rejected.** That outcome is evidence, not an obstacle. The preference for a
+local school is not a Brighton peculiarity: distance decay of the strength found
+here appears in every spatial interaction model of school choice, in every kind
+of city, over seventy years. A policy premised on families not holding that
+preference is premised on something no evidence base supports.
+
+**Reducing other schools' admission numbers may be a more powerful instrument
+for Longhill than anything done to Longhill.** This is the least certain finding
+here and the one with the largest potential effect, and published data cannot
+resolve it.
+
+## What is driving the sorting
+
+**Families choose on headline attainment, not on what a school adds.** Demand
+tracks Attainment 8 at 0.94 and the intake-adjusted measure at 0.47. And
+Attainment 8 tracks a school's proportion of disadvantaged pupils at **-0.87**,
+so a headline score is very largely a description of who walks through the
+doors. Families choosing on it are choosing a peer group and calling it a
+school.
+
+**The council's own guidance points them at it.** The admissions guide tells
+applicants to look at National Curriculum test results, public exam results and
+Ofsted. It nowhere mentions Progress 8, value added, or that results
+substantially reflect intake.
+
+**Most disadvantaged children do not live in disadvantaged areas.** 27% of the
+city's children live in the most deprived 30% of neighbourhoods; 24% of
+secondary pupils are FSM-eligible. Those cannot both describe the same children.
+An area-targeted intervention would miss roughly half the city's disadvantaged
+pupils while reaching a majority in those areas who are not eligible.
+
+**And the sorting happens mostly inside the geographic system, not between it
+and the faith sector.** The gap between the most and least representative
+non-religious schools is wider than the gap between the faith and non-faith
+sectors as wholes.
+
+## What the council should do
+
+1. **Do not set Longhill's admission number without calibrating this analysis on
+   the council's own records.** The question is not a fine judgement between
+   adjacent options; it is whether the school supports three forms of entry or
+   five, and published data cannot distinguish those. The work is a day's
+   analysis on records the admissions process already produces.
+
+2. **Publish the evidence base.** Nine aggregate tables, none disclosive, most a
+   single query, set out at @sec-data-requests. Publishing them alongside the
+   allocation factsheets each March would let every party to these debates argue
+   from the same evidence, and would cost a day of officer time a year.
+
+3. **Publish an intake-adjusted attainment measure in the admissions guide**,
+   alongside the raw one, with a sentence explaining what a headline grade
+   mostly reflects. The guide already tables roll, preferences and admission
+   numbers for every school. This is a column, not a new document, and it is the
+   only lever identified anywhere in this report that acts on demand rather than
+   shuffling supply.
+
+4. **Stop treating catchment priority as an instrument where it is inert.** At
+   five of the city's schools it allocates nothing. Any proposal resting on a
+   redraw should say explicitly whether it expects to work through priority,
+   which it cannot at those schools, or through preference, which is slower,
+   weaker and largely untested.
+
+5. **State which goal is being pursued when the two conflict**, and be honest
+   that pursuing it costs something measurable on the other. A consultation
+   presenting a redraw as good for disadvantaged children *and* good for an
+   eastern school is describing a trade-off as though it were a win.
+
+6. **Model the whole system before changing one part of it.** Every result here
+   says the decisions are not separable: reducing one school's admission number
+   pushes demand onto its neighbours and concentrates it, unevenly, on the school
+   least able to absorb it. At present each change is consulted on separately,
+   and nothing in that process would reveal whether they add up.
+
+::: {.callout-note}
+## How confident to be in each of these
+
+The findings above are not equally certain, and the report says so wherever they
+appear. Broadly: **the demographic arithmetic and the two-systems finding rest
+on the council's own published documents and are not in doubt.** The choice
+findings rest on published attainment and preference data and are firm. **The
+figures for how large each policy effect would be are the least certain**,
+because the model's key parameters cannot be estimated from published data,
+which is what recommendation 1 is about.
+
+Where this report and a record-calibrated model would diverge, the open figures
+are almost always the more optimistic about Longhill.
+:::
+
 # What this is
 
 Brighton & Hove has spent two years arguing about secondary school admissions.
