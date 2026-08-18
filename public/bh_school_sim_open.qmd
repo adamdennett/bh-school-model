@@ -172,6 +172,44 @@ Those comparison figures are quoted precisely, because a warning that a number i
 The alternative is not that these questions go unanswered. It is that they get answered by whoever argues loudest, using whatever numbers are to hand.
 :::
 
+::: {.callout-important}
+## Distance decay is not an assumption of this model. It is the most reliably observed regularity in human geography.
+
+Everything in this report rests on one empirical fact, so it is worth stating
+before the method rather than after it.
+
+**People interact less with things that are further away, and the fall-off is
+steep, regular, and measurable.** It has been observed in migration between
+regions and between countries; in commuting; in retail catchments; in access to
+hospitals and GP surgeries; in telephone calls, freight, trade and marriage
+partners; and in school choice, repeatedly, in every kind of city and every
+national system where anyone has looked. It has been formalised since the 1940s
+and modelled continuously since the 1960s. It is among the closest things the
+social sciences have to a law.
+
+This matters because policy is sometimes designed as though it were not true —
+as though where a school sits were an administrative detail, and families could
+be redistributed across a city if the arrangement asked them to. **That view has
+a long record of being tested and a short record of surviving.** It is not that
+Brighton's families are unusually attached to their neighbourhoods, or unusually
+resistant to being moved. It is that no population anywhere behaves the way such
+a policy needs them to.
+
+The model here does not assume distance decay in order to reach a conclusion. It
+**measures** it, from Brighton's own admissions data, and finds a value squarely
+in the range the literature reports elsewhere. A reader who wants to reject the
+conclusions of this report has to reject that measurement, and with it seventy
+years of consistent evidence from every domain in which human beings choose
+where to go.
+
+Nothing here says distance is the *only* thing that matters — attractiveness,
+attainment, reputation, faith and siblings all enter the model, and
+@sec-brightopia is devoted to separating geography from everything else. The
+claim is narrower and firmer: **any account of school demand that leaves
+distance out will be wrong, and any policy premised on families ignoring it will
+fail.**
+:::
+
 # Method {#sec-method}
 
 ## The model
@@ -2505,6 +2543,22 @@ find one that this cannot. It is a reasonable hypothesis and a testable one. But
 as things stand it is a hypothesis, and the case for local schooling does not
 need it — the distance-decay evidence carries that argument on its own, and is
 much stronger.
+
+**Nationally, though, the effect does exist.** FFT Education Datalab examined
+the question directly on National Pupil Database records — [*Are pupils who live
+further away from their school absent more
+often?*](https://ffteducationdatalab.org.uk/2023/11/are-pupils-who-live-further-away-from-their-school-absent-more-often/),
+November 2023 — using the distance between each pupil's postcode and their
+school. They find a relationship: modest in size, but real, and visible at a
+scale no single authority's school-level averages could detect.
+
+That is the right way round for this argument. **A weak pupil-level effect is
+exactly what would produce no visible signal in eleven school averages
+dominated by deprivation** — so Brighton's figures are consistent with the
+national finding rather than contrary to it. The honest position is that the
+distance-attendance link is established nationally, is likely to be present
+here, and is too small to be demonstrated from these figures alone. It is a
+reason to prefer local schooling at the margin, not a load-bearing argument.
 :::
 
 **Where this leaves the council.** The trade-off described above is real, and the
