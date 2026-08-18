@@ -2143,7 +2143,7 @@ The deprived neighbourhoods sit in the east — Whitehawk, Moulsecoomb, parts of
 Woodingdean — and in a band along the seafront. That is the geography every
 result in this document has been describing without naming.
 
-## What each catchment starts with
+## What each catchment starts with {#sec-catchment-profile}
 
 Published data cannot say which school each child attends, so this bundle
 cannot compute a school-level intake profile. It can do something arguably more
@@ -2382,73 +2382,79 @@ That is the same origin–destination gap identified in @sec-wj, and it is the
 single most valuable thing the council could release.
 :::
 
-## What individual records add here, and why it matters
+## The tension no published statistic can see {#sec-catchment-intake-gap}
 
-This is one of the places where the restricted data changes the picture rather
-than merely sharpening it, so it is worth setting out what it shows — labelled
-as unreproducible from open sources rather than presented as a finding of this
-document.
+Everything above describes each catchment's **resident** children. What matters
+for a school is its **intake** — and between the two sits every family that
+chooses to go elsewhere. Published data cannot observe that step at all, and the
+gap it leaves is not a technicality. It hides the single hardest trade-off in
+this whole debate.
 
-Running the same IDACI attachment through individual preference records gives
-each school's **intake** profile, not just its catchment's. Two things follow
-that nothing above can see.
+**Consider what an analysis of that step would be able to establish, and why the
+council should want it done.** With individual preference records attached to
+home neighbourhood, it would be possible to compare each catchment's resident
+deprivation against the deprivation of the children its school actually admits.
+The interesting quantity is not either figure but the *difference* between them,
+and specifically whether it is symmetric.
 
-**The gap between catchment and intake is large, and it runs in opposite
-directions.** Longhill's catchment is around 25% deprived on the figures above;
-its actual intake is close to 49%. The affluent families in its catchment leave
-— to other city schools, and disproportionately out of the city altogether,
-where the leavers are the least deprived group of all. Hove Park shows the
-same effect within an affluent catchment: it takes a roughly 30% deprived
-intake from a catchment whose children are about 15% deprived, because
-Blatchington Mill absorbs the families best placed to choose it.
+There are reasons to think it would not be. Choosing a school other than the
+local one requires knowing the alternatives, being able to travel, and being
+confident enough in the process to rank preferences strategically. If those
+capabilities are unevenly distributed — and the wider literature on school choice
+is consistent that they are — then the families who leave a catchment will not
+be a random sample of it. An undersubscribed school would then admit an intake
+more deprived than the neighbourhood it sits in, not because anyone excluded
+anyone, but because the families best placed to leave, left.
 
-**The mechanism is a choice effect, not an admissions one.** Fitting the weight
-families place on school attractiveness separately by deprivation shows the
-least deprived third discriminating between schools about twice as sharply as
-the most deprived third, with the difference significant at p < 0.0001. Nobody
-is excluding poorer children from the popular schools; more advantaged families
-are simply better at securing the place they want. Within any catchment, the
-less popular school is left with the more deprived intake.
+**Nothing in this report can confirm that for Brighton.** It is a hypothesis
+consistent with the mechanism, not a measurement. But it is testable from records
+the council holds, and if it holds it reframes the policy question completely.
 
-That is the sorting process the segregation literature describes, and it
-happens underneath a Gorard index that looks reassuringly low. The index says
-Brighton's schools are well mixed **relative to national variation**. It does
-not say the mixing is arrived at neutrally.
+::: {.callout-important}
+## A viable eastern school and a concentration of disadvantage may be the same policy
 
-**Why this belongs in a public document even though it cannot be reproduced
-here.** It bears directly on the policy question. A catchment redraw changes
-which school a family is *entitled* to; it does not change how well placed they
-are to act on a preference. Any policy justified by improving access for
-disadvantaged children is working against a sorting mechanism that this open
-model cannot see and the council's own published statistics do not measure —
-and the council could measure it tomorrow from records it already holds.
+This is the tension worth putting in front of anyone deciding Longhill's future,
+and it is genuine rather than rhetorical.
 
-**Running the levers through it produces one further result, and it is
-uncomfortable.** Each option for Longhill can be scored not just on how many
-children it recruits but on which:
+The east of the city has the most deprived catchments in Brighton
+(@sec-catchment-profile). Every policy that would make an eastern school more
+viable works by **retaining more of its local children** — a redraw that captures
+more local families, a smaller admission number matched to local demand, a
+relocation that shortens local journeys, retaining the children who currently
+leave. Each of those improves the school's roll by binding it more tightly to
+the neighbourhood it stands in.
 
-- **Relocating to Elm Grove** raises the deprivation of its intake by around
-  12 percentage points. The site sits nearer Whitehawk, so the children it
-  would newly reach are disproportionately the city's poorest. That is the
-  recruitment gain in @sec-redraw seen from the other side.
-- **Retaining the families who currently leave the city** lowers it by about 4
-  points, because those leavers are the least deprived group in the catchment —
-  22% against 43% of the children who actually attend Longhill.
-- **Admission-number reductions elsewhere** move it by under a point. They
-  redistribute children between schools without changing which children are in
-  play.
+**But the neighbourhood is deprived.** So every one of those measures, if it
+works, makes the school's intake more disadvantaged than it currently is. The
+levers that fix viability and the levers that concentrate disadvantage are not
+merely related — on this reading they are *the same levers*, and they cannot be
+pulled in opposite directions.
 
-So **a viable eastern school and a more even spread of disadvantage are in
-tension**. Every arrangement that fills Longhill does so by giving it more of
-the children who live nearest to it, and those are the poorest in Brighton. The
-movements are small on a Gorard index that starts low, and none turns the city
-into a segregated system — but the direction is consistent, and it runs against
-what the 2024 redraw was designed to achieve.
+The reverse holds too. Open allocation, the FSM out-of-catchment criterion, and
+the 2024 redraw all loosen the binding between neighbourhood and school. They
+spread disadvantage more evenly, which is their purpose. They also, necessarily,
+take children out of the eastern catchments — and @sec-redraw shows the redraw
+costing Longhill on precisely those grounds.
 
-None of that can be derived from published statistics. It is the clearest case
-in this document for why the origin–destination data matters: without it, a
-council can pursue a policy for equity reasons and a policy for viability
-reasons without ever discovering that the two work against each other.
+**A council can have a more socially mixed school system, or it can have
+strongly viable schools in its most deprived areas. The published evidence does
+not show it can straightforwardly have both**, and no amount of catchment
+redesign dissolves the conflict, because the conflict is between two things the
+city wants rather than between a policy and its implementation.
+
+That is not an argument against either goal. It is an argument for stating which
+one is being pursued, and for being honest that pursuing it costs something
+measurable on the other. Consultations that present a redraw as good for
+disadvantaged children *and* good for Longhill are describing a trade-off as
+though it were a win.
+
+**What the records would add is the size of the trade-off**, which is currently
+unknown and is the number a decision actually needs. It is entirely possible the
+effect is small enough to ignore. It is equally possible it is large. Published
+statistics cannot distinguish those cases, and the council is deciding as though
+the question does not arise.
+:::
+
 
 # King's, Hove Park, and the other end of the city {#sec-kings-open}
 
