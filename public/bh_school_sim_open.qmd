@@ -1349,6 +1349,94 @@ the same admissions round as the sibling and open-admission changes, and the
 council confirms it has not modelled the combined effect.
 :::
 
+
+## What the 2027/28 arrangements actually do {#sec-fsm-2027}
+
+The council has now published its determined arrangements for 2027/28 entry, and
+they change the criterion substantially. It is worth working through, because the
+effect is not the one the headline change suggests.
+
+**The priorities are renumbered and one is new.** Targeted FSM in catchment
+becomes priority 4 and Targeted FSM elsewhere priority 5, both capped at a city
+average taken as 30% of PAN. **A new priority 6 reserves up to 5% of places at
+each community school for children living in the four single-school catchments —
+BACA, PACA, Patcham and Longhill.** Catchment residence drops to priority 7, and
+priority 8 now explicitly catches out-of-catchment FSM children not placed under
+5 or 6.
+
+```{r fsm-2027}
+# 2025 offers by criterion, from the council's published admissions guide,
+# against the 5% reserve the new priority 6 creates.
+TR <- fo$targeted_share
+tibble::tribble(
+  ~School,             ~PAN, ~fsm_in, ~fsm_out,
+  "Blatchington Mill",   330,      38,        9,
+  "Dorothy Stringer",    330,      26,       23,
+  "Varndean",            300,      53,       35) %>%
+  mutate(`FSM places now` = fsm_in + fsm_out,
+         `Under Targeted only` = round(`FSM places now` * TR),
+         Freed = `FSM places now` - `Under Targeted only`,
+         `New 5% reserve` = round(0.05 * PAN),
+         `Net to catchment` = sprintf("%+d", Freed - `New 5% reserve`)) %>%
+  select(School, PAN, `FSM places now`, `Under Targeted only`, Freed,
+         `New 5% reserve`, `Net to catchment`) %>%
+  tbl(caption = "Effect of the 2027/28 arrangements at the three schools where admission criteria actually decide anything")
+```
+
+**The net gain to catchment applicants is small at two of the three schools.**
+Blatchington Mill and Dorothy Stringer each free about twenty FSM places and give
+sixteen back to the new priority 6 — a net five or six children, well inside the
+year-to-year noise. **Varndean is the exception**, because it was carrying by far
+the heaviest FSM allocation in the city at 29% of its PAN against 14 to 15%
+elsewhere. It gains around two dozen catchment places.
+
+::: {.callout-note}
+## The 30% cap will not bind anywhere
+
+The arrangements set out a careful worked calculation for capping FSM places at a
+city average of 30% of PAN. After the narrowing, FSM allocations at Blatchington
+Mill and Dorothy Stringer fall to roughly **8% of PAN**, and Varndean to about
+**16%**.
+
+The cap is therefore inert. What limits FSM admissions under the new
+arrangements is the size of the eligible pool, not the ceiling the council has
+written above it — and a reader of the arrangements would not guess that from
+the prominence the calculation is given.
+:::
+
+::: {.callout-important}
+## Priority 6 is open allocation reborn as geography
+
+The new 5% reserve is the most consequential part of the change, and it replaces
+a deprivation-based route to the popular schools with a **geographic** one.
+
+Across the six community schools it amounts to roughly **79 places city-wide**.
+It is aimed precisely at the four catchments where a family has no choice of
+school within their own area — which is a defensible thing to target, and a
+different thing from what the FSM criterion targeted.
+
+**The direction of travel is toward viability and away from social mix**, which
+is the trade-off @sec-catchment-intake-gap sets out. Narrowing the FSM priority
+tightens the binding between neighbourhood and school: an eastern child who would
+have reached Varndean under the old out-of-catchment FSM route now falls to
+priority 8 there, and is more likely to be allocated their catchment school. That
+helps the eastern schools' rolls and concentrates disadvantage in their intakes.
+Priority 6 offsets part of it, but 79 places is a fraction of what the FSM route
+was moving.
+
+**Out-of-catchment FSM children lose twice**: the eligible pool shrinks by
+around `r sprintf("%.0f%%", 100 * (1 - fo$targeted_share))`, and what remains
+sits behind in-catchment FSM in the queue.
+:::
+
+**And the caveat that applies to all of it.** Everything above bites only at
+Blatchington Mill, Dorothy Stringer and Varndean. At Longhill, Brighton Aldridge,
+Portslade Aldridge, Hove Park and Patcham the criteria remain inert — the
+council's own guide records that they allocate all preferences — so reordering
+the priorities changes nothing there whatever. **A change to the admission
+criteria is a change to how three schools ration places, not a change to the
+city's admissions system.**
+
 # Do all families choose the same way? {#sec-heterogeneity-open}
 
 ::: {.callout-note}
