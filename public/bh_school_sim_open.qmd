@@ -34,6 +34,50 @@ execute:
 library(tidyverse)
 library(sf)
 library(leaflet)
+
+# ---- CARTO basemap API key -------------------------------------------
+# CARTO now require a key on their raster tiles; without one the tiles
+# carry an "API key required" watermark. leaflet-providers has no slot
+# for a key, so this wraps addProviderTiles(): CartoDB providers are
+# rebuilt as a keyed addTiles() call and everything else is passed
+# straight through to leaflet. Attribution is set explicitly, because
+# addTiles() does not inherit the provider's and keeping the CARTO and
+# OpenStreetMap credits visible is a condition of the free tier.
+# The key is read from CARTO_KEY in ~/.Renviron. If it is unset the maps
+# still render, just watermarked, so clones and CI are unaffected.
+addProviderTiles <- function(map, provider, ...) {
+  variants <- c(
+    Positron             = "light_all",
+    PositronNoLabels     = "light_nolabels",
+    PositronOnlyLabels   = "light_only_labels",
+    DarkMatter           = "dark_all",
+    DarkMatterNoLabels   = "dark_nolabels",
+    DarkMatterOnlyLabels = "dark_only_labels",
+    Voyager              = "rastertiles/voyager",
+    VoyagerNoLabels      = "rastertiles/voyager_nolabels",
+    VoyagerOnlyLabels    = "rastertiles/voyager_only_labels",
+    VoyagerLabelsUnder   = "rastertiles/voyager_labels_under")
+  key <- Sys.getenv("CARTO_KEY", "")
+  nm  <- as.character(provider)[1]
+  if (startsWith(nm, "CartoDB.")) nm <- substring(nm, 9L)
+  if (!nzchar(key) || !nm %in% names(variants))
+    return(leaflet::addProviderTiles(map, provider, ...))
+  dots <- list(...)
+  opts <- leaflet::tileOptions(subdomains = "abcd", maxZoom = 20)
+  if (!is.null(dots$options)) {
+    opts <- utils::modifyList(opts, dots$options); dots$options <- NULL
+  }
+  do.call(leaflet::addTiles, c(list(
+    map,
+    urlTemplate = sprintf(
+      "https://{s}.basemaps.cartocdn.com/%s/{z}/{x}/{y}{r}.png?key=%s",
+      variants[[nm]], key),
+    attribution = paste0(
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      ' contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
+    options = opts), dots))
+}
+# ----------------------------------------------------------------------
 library(plotly)
 library(knitr)
 library(kableExtra)
