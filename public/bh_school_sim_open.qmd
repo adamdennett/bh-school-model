@@ -35,47 +35,68 @@ library(tidyverse)
 library(sf)
 library(leaflet)
 
-# ---- CARTO basemap API key -------------------------------------------
-# CARTO now require a key on their raster tiles; without one the tiles
-# carry an "API key required" watermark. leaflet-providers has no slot
-# for a key, so this wraps addProviderTiles(): CartoDB providers are
-# rebuilt as a keyed addTiles() call and everything else is passed
-# straight through to leaflet. Attribution is set explicitly, because
-# addTiles() does not inherit the provider's and keeping the CARTO and
-# OpenStreetMap credits visible is a condition of the free tier.
-# The key is read from CARTO_KEY in ~/.Renviron. If it is unset the maps
-# still render, just watermarked, so clones and CI are unaffected.
+# ---- Basemap, no API key ---------------------------------------------
+# CARTO require a key on their raster tiles, and without one the tiles
+# carry an "API key required" watermark. That failed in the only way
+# that really matters: silently. Any render from a shell without
+# CARTO_KEY in its environment produced watermarked maps and no other
+# symptom, so the fault was found by eye or not at all.
+#
+# So the tiles come from Esri's World Gray Canvas instead, which needs
+# no key. Of the keyless alternatives it is the one that actually is
+# keyless: Stadia's tiles return 401 without a key and Jawg's return
+# 400, both having moved to requiring one.
+#
+# This still wraps addProviderTiles() so that no call site has to
+# change. A CartoDB.* provider is served from Esri; anything else is
+# passed straight through to leaflet. Esri splits the canvas and the
+# place names into two services where CARTO bakes them into one, so the
+# Positron-style variants map onto one or both of them, and the
+# DarkMatter ones onto Esri's dark canvas.
+#
+# maxNativeZoom is set because Esri publishes these canvases to zoom 16
+# and above that the server returns a grey tile reading "Map data not
+# yet available" rather than a 404 - a silent failure again. Leaflet
+# upsamples level 16 instead of asking for 17, so the basemap softens
+# past that point and the data drawn over it stays sharp.
 addProviderTiles <- function(map, provider, ...) {
-  variants <- c(
-    Positron             = "light_all",
-    PositronNoLabels     = "light_nolabels",
-    PositronOnlyLabels   = "light_only_labels",
-    DarkMatter           = "dark_all",
-    DarkMatterNoLabels   = "dark_nolabels",
-    DarkMatterOnlyLabels = "dark_only_labels",
-    Voyager              = "rastertiles/voyager",
-    VoyagerNoLabels      = "rastertiles/voyager_nolabels",
-    VoyagerOnlyLabels    = "rastertiles/voyager_only_labels",
-    VoyagerLabelsUnder   = "rastertiles/voyager_labels_under")
-  key <- Sys.getenv("CARTO_KEY", "")
-  nm  <- as.character(provider)[1]
-  if (startsWith(nm, "CartoDB.")) nm <- substring(nm, 9L)
-  if (!nzchar(key) || !nm %in% names(variants))
+  nm <- as.character(provider)[1]
+  if (!startsWith(nm, "CartoDB."))
     return(leaflet::addProviderTiles(map, provider, ...))
+  nm <- substring(nm, 9L)
+
+  dark <- startsWith(nm, "DarkMatter")
+  shade <- if (dark) "Dark" else "Light"
+  esri <- function(part) sprintf(paste0(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/",
+    "World_%s_Gray_%s/MapServer/tile/{z}/{y}/{x}"), shade, part)
+
+  want_base   <- !grepl("OnlyLabels$", nm)
+  want_labels <- !grepl("NoLabels$", nm)
+
   dots <- list(...)
-  opts <- leaflet::tileOptions(subdomains = "abcd", maxZoom = 20)
+  opts <- leaflet::tileOptions(maxNativeZoom = 16, maxZoom = 20)
   if (!is.null(dots$options)) {
     opts <- utils::modifyList(opts, dots$options); dots$options <- NULL
   }
-  do.call(leaflet::addTiles, c(list(
-    map,
-    urlTemplate = sprintf(
-      "https://{s}.basemaps.cartocdn.com/%s/{z}/{x}/{y}{r}.png?key=%s",
-      variants[[nm]], key),
-    attribution = paste0(
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      ' contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
-    options = opts), dots))
+  attrib <- paste0(
+    'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, ',
+    'HERE, Garmin, &copy; ',
+    '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    ' contributors')
+
+  if (want_base)
+    map <- do.call(leaflet::addTiles, c(list(
+      map, urlTemplate = esri("Base"), attribution = attrib,
+      options = opts), dots))
+  # Only one of the two layers carries the credit, or every map would
+  # print it twice in the corner.
+  if (want_labels)
+    map <- do.call(leaflet::addTiles, c(list(
+      map, urlTemplate = esri("Reference"),
+      attribution = if (want_base) "" else attrib,
+      options = opts), dots))
+  map
 }
 # ----------------------------------------------------------------------
 library(plotly)
