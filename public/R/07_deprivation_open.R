@@ -144,9 +144,9 @@ gorard_intake <- function(beta, gamma, w_spec) {
 }
 
 message("\n=== Segregation across school intakes, swept ===")
-grid <- tidyr::expand_grid(beta = c(1.5, 2.0, 2.5, 3.0),
+grid <- tidyr::expand_grid(beta = c(1.5, 1.7, 2.0, 2.5, 3.0),
                            gamma = c(0, 0.8, 1.6, 2.4),
-                           w_spec = c("W_pan", "W_prefs", "W_att8"))
+                           w_spec = c("W_pan", "W_prefs", "W_wprefs", "W_att8"))
 sweep <- grid %>%
   mutate(gorard = purrr::pmap_dbl(list(beta, gamma, w_spec), gorard_intake))
 

@@ -336,7 +336,7 @@ $W_j$ — how attractive families find each school, net of how far away it is �
 
 **Why this version cannot estimate it.** Resolving that needs individual preference records — who named which school, from where. With those, $W_j$ can be estimated freely for each school as a destination fixed effect, letting the data say how much more often a school is named than its location alone would predict. Published statistics give only the margins of that table: how many children live in each area, how many places each school filled. They do not give the interactions, which is the identification problem set out in @sec-envelope.
 
-**So it is swept, not chosen.** Four specifications are carried through every calculation, spanning the plausible range from "nothing distinguishes schools" to "demand tracks results":
+**So it is swept, not chosen.** Five specifications are carried through every calculation, spanning the plausible range from "nothing distinguishes schools" to "demand tracks results":
 
 ```{r wj-specs}
 inp$attract %>%
@@ -344,14 +344,16 @@ inp$attract %>%
             `Equal` = 1,
             `By PAN` = round(W_pan, 2),
             `By first preferences` = round(W_prefs, 2),
+            `By weighted preferences` = round(W_wprefs, 2),
             `By Attainment 8` = round(W_att8, 2)) %>%
-  arrange(desc(`By first preferences`)) %>%
-  tbl(caption = "The four attractiveness specifications. Each is scaled so the city average is 1.")
+  arrange(desc(`By weighted preferences`)) %>%
+  tbl(caption = "The five attractiveness specifications. Each is scaled so the city average is 1.")
 ```
 
 - **Equal** — every school identical. Nobody believes it, but it bounds the space and is what @sec-brightopia runs on.
 - **Proportional to PAN** — bigger schools attract more, a pure size effect with no quality content.
-- **Published first preferences** — the council's own factsheets, averaged over seven recent rounds. The closest open proxy for revealed demand, and the central specification used where a single one is needed.
+- **Published first preferences** — the council's own factsheets, averaged over the five most recent rounds.
+- **Weighted preferences** — the same factsheets and the same five rounds, but counting second and third preferences too, discounted geometrically so a second is worth half a first and a third a quarter. **This is the central specification** used where a single one is needed. The paired catchments are the reason: a family in Stringer/Varndean or Hove Park/Blatchington Mill must rank two local schools against each other, so the catchment's first preferences split between them and a first-preference count reads a school families put second as one nobody wanted. It moves Hove Park from `r sprintf("%.2f", inp$attract$W_prefs[inp$attract$name == "Hove Park School"])` to `r sprintf("%.2f", inp$attract$W_wprefs[inp$attract$name == "Hove Park School"])`, and it moves Longhill **down**, from `r sprintf("%.2f", inp$attract$W_prefs[inp$attract$name == "Longhill High School"])` to `r sprintf("%.2f", inp$attract$W_wprefs[inp$attract$name == "Longhill High School"])`.
 - **Attainment 8** — demand tracks published results.
 
 ::: callout-important
@@ -361,7 +363,7 @@ The variance decomposition in @sec-envelope attributes **`r sprintf("%.0f%%", en
 
 That is worth stating plainly because it identifies what restricted data would actually be worth having. Precise travel-time behaviour is **not** the gap — $\beta$ barely matters. **School-level revealed preference is.** An origin–destination matrix of Year 7 preferences by area and destination school, which carries no disclosure risk at catchment level, would replace the widest band of uncertainty in this document with a measurement.
 
-Two consequences follow for how to read what comes next. Conclusions that hold across all four specifications are safe to state without restricted data — and those are reported as such. Conclusions that depend on which specification is chosen are flagged, and the size of the dependence is given rather than hidden.
+Two consequences follow for how to read what comes next. Conclusions that hold across all five specifications are safe to state without restricted data — and those are reported as such. Conclusions that depend on which specification is chosen are flagged, and the size of the dependence is given rather than hidden.
 :::
 
 Note that first preferences bundle a school's reputation together with where it happens to be: a school in the middle of the city collects preferences partly because it is convenient. That is exactly the entanglement the sweep exists to handle, and it is why the "equal" and "by PAN" specifications are kept in the range rather than discarded as implausible.
@@ -476,12 +478,12 @@ Published statistics give the *margins* of the origin-destination table — how 
 So instead of asserting a value, the analysis runs the model across the whole plausible range of the three parameters that matter, and reports how often each conclusion holds:
 
 | Parameter | Swept over | Controls |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | $\beta$ | `r min(env$betas)` – `r max(env$betas)` | how sharply demand falls with journey time |
 | $W_j$ | `r length(env$w_specs)` specifications | school attractiveness net of location |
 | $\gamma$ | `r min(env$gammas)` – `r max(env$gammas)` | strength of catchment priority |
 
-That is `r fmt(nrow(env$envelope))` model runs. Where a single number is needed to draw a chart, the **central specification** is the midpoint of each range — $\beta$ = `r os$spec$beta`, $\gamma$ = `r os$spec$gamma`, attractiveness from published first preferences — chosen for legibility only, with the band from the sweep reported alongside.
+That is `r fmt(nrow(env$envelope))` model runs. Where a single number is needed to draw a chart, the **central specification** is $\beta$ = `r os$spec$beta`, $\gamma$ = `r os$spec$gamma`, and attractiveness from rank-weighted published preferences, with the band from the sweep reported alongside. $\gamma$ is the midpoint of its range and nothing more. $\beta$ is not: `r os$spec$beta` is the decay the accessibility work settles on, and using one value across both documents is worth more than a midpoint in each. It sits well inside the swept range either way.
 
 # The system as it stands
 
@@ -616,6 +618,8 @@ The two correlate at only `r sprintf("%.2f", cor(log(bright$at_original_beta$acc
 
 **Dorothy Stringer is the opposite**: accessibility `r round(bright$at_original_beta$access_index[bright$at_original_beta$name == "Dorothy Stringer School"])`, but the **highest** competition term in the city at `r round(bright$at_original_beta$compete_index[bright$at_original_beta$name == "Dorothy Stringer School"])`. Its low modelled intake is crowding, and crowding is exactly what a school overcomes by being wanted — which Stringer is, filling to its admission number every year. Longhill cannot escape its position the same way, because no amount of popularity conjures children into the south-east corner of the city.
 
+**Once** $W_k$ stops dropping out, the term changes. The reduction to pure spatial clustering holds only in the distance-only world, where every school is identical by construction. The bundle also runs this model with a real $W_j$ (below), and there an unweighted term would say a school is as crowded by a rival nobody asks for as by one everybody does. Computing $C_j$ with $W_k$ set to the weighted preference rate moves Dorothy Stringer from `r round(bright$at_original_beta$compete_index[bright$at_original_beta$name == "Dorothy Stringer School"])` to `r round(bright$at_original_beta$compete_index_w[bright$at_original_beta$name == "Dorothy Stringer School"])` — its neighbour Varndean is among the most-wanted schools in the city, so weighting makes Stringer's position more crowded, not less. Longhill moves from `r round(bright$at_original_beta$compete_index[bright$at_original_beta$name == LH])` to `r round(bright$at_original_beta$compete_index_w[bright$at_original_beta$name == LH])`. The two versions correlate at `r sprintf("%.2f", cor(log(bright$at_original_beta$compete_index), log(bright$at_original_beta$compete_index_w)))`, so the ordering is not in question; the magnitudes are.
+
 Measuring each school against its **own** admission number would mislead in a further way, because the city has `r fmt(bright$city_places)` places for about `r fmt(bright$city_children)` children — every school is below its PAN by construction, and the largest look worst. That is why both indices above are set to 100 at the city average.
 
 ::: callout-note
@@ -667,6 +671,44 @@ bright$lh_sweep %>%
 At the decay value the original used, Brightopia gives Longhill `r round(bright$lh_sweep$modelled_now[bright$lh_sweep$beta == 1.5])` children where it stands and `r round(bright$lh_sweep$modelled_elm[bright$lh_sweep$beta == 1.5])` at the top of Elm Grove. It sits below its 2024 admission number across `r round(100 * mean(bright$lh_sweep$fill_now < 1))`% of the decay range at Ovingdean and `r round(100 * mean(bright$lh_sweep$fill_elm < 1))`% at Elm Grove, and relocation raises its distance-only intake at **every** value of beta tested. There is no plausible decay parameter at which the current site is the better placed of the two.
 
 This is worth separating from everything that follows. The rest of this document depends on assumptions about attractiveness and admissions priority that open data cannot pin down. This section does not. Whatever else is uncertain, Longhill is poorly sited relative to where Brighton's children live, and the Elm Grove site is not.
+
+## Geography alone, and geography with demand {#sec-brightopia-demand}
+
+Everything above holds $W_j$ identical, which is what makes this section's conclusion so robust: it cannot be dismissed as an artefact of attainment proxies or preference data, because it uses none of them. That strength is also its limit. It cannot say anything about how many children a school would actually draw, because it has assumed the question away.
+
+So the same model is run once more with $W_j$ set to the bundle's central specification — rank-weighted published preferences — at the same $\beta$, so the only thing that changes between the two columns is what families want.
+
+```{r brightopia-demand}
+bright$demand_compare %>%
+  arrange(shift) %>%
+  transmute(School = name,
+            `PAN 2026` = pan2026,
+            `Geography only` = round(geog_only),
+            `With demand` = round(with_demand),
+            Shift = sprintf("%+.0f", shift),
+            `%` = sprintf("%+.0f%%", shift_pct)) %>%
+  tbl(caption = sprintf(
+    "Modelled intake with every school equally attractive, and with W_j set to weighted preferences. Both at beta = %.1f. Neither applies an admission-number ceiling.",
+    bright$beta_ref))
+```
+
+```{r brightopia-demand-stats}
+#| include: false
+bdc <- bright$demand_compare
+bdl <- bdc[bdc$name == LH, ]
+```
+
+**Longhill is where the two runs disagree most.** On geography alone it draws `r round(bdl$geog_only)` children, close to the `r bdl$pan2026` places now in force. With demand put back in it draws **`r round(bdl$with_demand)`**, a fall of `r sprintf("%.0f%%", abs(bdl$shift_pct))` — the largest in the city. The reduction to `r bdl$pan2026` closed the gap to *geography*. It did not close the gap to *demand*.
+
+That is a genuinely awkward result for this document, and it is worth being explicit about why it is reported rather than buried. The weighted specification was adopted because the paired catchments make first-preference counts misleading — a reason that has nothing to do with Longhill. It happens to move Longhill's attractiveness **down**, from `r sprintf("%.2f", inp$attract$W_prefs[inp$attract$name == LH])` on first preferences to `r sprintf("%.2f", inp$attract$W_wprefs[inp$attract$name == LH])` weighted. Counting all three ranks does not help the school this report is most concerned with.
+
+Two things follow, and they pull in different directions.
+
+**The location finding stands.** Nothing in this run touches it: relocation raises Longhill's intake at every decay value tested, on geography alone, with no attractiveness assumption anywhere in the calculation.
+
+**But location is not the whole constraint.** Relocation and admission numbers act on the geography term. Neither acts on $W_j$, and $W_j$ is what families think of the school. A school can be moved to where the children are and still not be chosen by them — which is why @sec-choice matters as much to Longhill's future as this section does.
+
+Neither run applies a capacity ceiling or a catchment rule, so these are statements about natural demand rather than forecasts of a roll. The configurations with catchments and ceilings in place are in @sec-moving-open.
 
 # Calibration {#sec-calibration-open}
 
@@ -735,17 +777,32 @@ ggplotly(gg, tooltip = "text")
 ```{r choice-models}
 os$choice_tbl %>%
   transmute(Specification = spec, `R²` = round(r2, 3), Coefficients = terms) %>%
-  tbl(caption = "Explaining demand. n = 10, so this is descriptive — no p-values are reported.")
+  tbl(caption = "Explaining demand. The first three rows count first preferences in a single admissions round; the last three count all three ranks, discounted, across five rounds. n = 10 either way, so this is descriptive — no p-values are reported.")
+```
+
+```{r choice-lookup}
+#| include: false
+cr <- function(s) os$choice_tbl$r2[os$choice_tbl$spec == s]
+cva1 <- coef(os$choice_models[["Attainment 8 + value-added"]])[["va"]]
+cvaw <- coef(os$choice_models[["Attainment 8 + value-added, weighted preferences"]])[["va"]]
 ```
 
 ::: callout-important
 ## The finding
 
-Raw Attainment 8 explains **`r sprintf("%.0f%%", 100*os$choice_tbl$r2[os$choice_tbl$spec == "Attainment 8"])`** of the variation in how much Brighton families want a school. Value-added — the measure of what the school actually contributes once its intake is accounted for — explains **`r sprintf("%.0f%%", 100*os$choice_tbl$r2[os$choice_tbl$spec == "Value-added"])`**.
-
-Put both in the same model and Attainment 8 stays strongly positive while value-added turns *negative*.
+On the weighted measure — all three preference ranks, five rounds — raw Attainment 8 explains **`r sprintf("%.0f%%", 100*cr("Attainment 8, weighted preferences"))`** of the variation in how much Brighton families want a school. Value-added, the measure of what the school actually contributes once its intake is accounted for, explains **`r sprintf("%.0f%%", 100*cr("Value-added, weighted preferences"))`**. Adding value-added to the attainment model lifts the fit from `r sprintf("%.2f", cr("Attainment 8, weighted preferences"))` to `r sprintf("%.2f", cr("Attainment 8 + value-added, weighted preferences"))` — which is to say barely at all.
 
 Families are choosing the school with the higher headline score, not the school that does more for its pupils. Since headline scores are largely a function of who a school teaches, the "golden ticket" of a place at a high-scoring school is mostly a ticket to sit alongside higher-attaining classmates — not to be better taught.
+:::
+
+::: callout-note
+## A correction, and why it is left visible
+
+An earlier version of this report counted first preferences in a single round, and reported that putting both measures in one model turned the value-added coefficient **negative** — which reads as families actively avoiding schools that add value.
+
+That does not survive. On the single round the coefficient is `r sprintf("%+.4f", cva1)`; across five rounds and all three ranks it is `r sprintf("%+.4f", cvaw)`, small and positive. Ten schools in one admissions round cannot carry a sign, and the claim has been withdrawn.
+
+The substantive finding is unaffected: value-added explains far less of demand than the headline score does, on either counting. It is the *sign* of the joint coefficient that was over-read, and the trap is available to anyone reading a single year's factsheet.
 :::
 
 This is not a criticism of parents. Attainment 8 is published, prominent and easy to compare; contextual value-added is not published in any form a parent would encounter. But it does undercut the premise that moving children between schools transfers a quality benefit. The distributional side of that question — which children live where — is in @sec-deprivation. Brighton Aldridge Community Academy has one of the better value-added records in the city and one of the lowest demand ratios; Patcham High has the weakest value-added and sits close to the city average for demand.
@@ -1453,7 +1510,7 @@ fill_open <- env$envelope %>%
   # The lower quartile rather than the median. Every open specification
   # shares the same blind spot — none can see how strongly families avoid
   # a school — so they err in the same direction rather than scattering
-  # either side of the truth. A central tendency across four specifications
+  # either side of the truth. A central tendency across five specifications
   # biased the same way is still biased.
   summarise(intake = quantile(natural_intake, 0.25), .groups = "drop") %>%
   tidyr::crossing(pan = PAN_LADDER) %>%
@@ -1474,7 +1531,7 @@ fill_open %>%
 
 This is the same figure, on the same axes and the same colour scale, as the one in the record-calibrated analysis — so the two can be compared directly rather than by translation. **The caution below is about the levels, not the construction.**
 
-It reads the **lower quartile** of the sweep rather than the median, for the reason set out in @sec-envelope: all four attractiveness specifications share the same blind spot, so they err in the same direction rather than scattering either side of the truth, and a central tendency across four specifications biased the same way is still biased. On the median every admission number of 180 and below reads 100% in every year, which is not a finding but an artefact of that bias. The quartile at least distinguishes between the options, which is what the figure is for.
+It reads the **lower quartile** of the sweep rather than the median, for the reason set out in @sec-envelope: all five attractiveness specifications share the same blind spot, so they err in the same direction rather than scattering either side of the truth, and a central tendency across five specifications biased the same way is still biased. On the median every admission number of 180 and below reads 100% in every year, which is not a finding but an artefact of that bias. The quartile at least distinguishes between the options, which is what the figure is for.
 
 The second view answers a different question, and it is the one published data is better placed to answer: not how full the school gets under one set of assumptions, but how often it reaches its number across *every* assumption in the sweep.
 
@@ -2549,7 +2606,7 @@ If any is wrong, the data to show it exists. We would welcome the correction.
 # Sources {#sec-sources}
 
 | Input | Source |
-|------------------------------------|------------------------------------|
+|----|----|
 | Travel times | `r5r` routing over OpenStreetMap and Brighton & Hove GTFS, May 2024 |
 | Admissions, PAN, preferences | Brighton & Hove City Council published allocation factsheets, 2013–2026 |
 | School characteristics | DfE [Get Information About Schools](https://get-information-schools.service.gov.uk/) |

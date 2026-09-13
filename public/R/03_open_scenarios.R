@@ -9,10 +9,24 @@
 # across a reduced factorial of the same envelope. No result in this file
 # depends on a value that could not be defended from open data.
 #
-#   beta   central 2.0   band {1.4, 2.0, 2.6}   (full sweep 1.0-3.2 in 02)
+#   beta   central 1.7   band {1.4, 1.7, 2.6}   (full sweep 1.5-3.2 in 02)
 #   gamma  central 1.2   band {0.4, 1.2, 2.0}   (full sweep 0-2.4 in 02)
-#   W      central published first preferences
-#          band {PAN, published first preferences, Attainment 8}
+#   W      central rank-weighted published preferences
+#          band {PAN, first preferences, weighted preferences, Attainment 8}
+#
+# TWO CENTRAL VALUES CHANGED, and neither is cosmetic:
+#
+#   beta was 2.0, the midpoint of its band and nothing more. 1.7 is the
+#   value the accessibility work settles on and uses throughout, and a
+#   single decay across the two documents is worth more than a midpoint.
+#   It sits inside the swept range either way, and 02 still reports what
+#   happens across the whole of it.
+#
+#   W was first preferences. It is now ranks 1-3, geometrically
+#   discounted (01a). The paired catchments make a first-preference
+#   count read a school families put second as one nobody wanted, which
+#   is half the city. Both remain in the band, so the difference between
+#   them is still reported rather than assumed away.
 #
 # Output: public/output/open_scenarios.rds, public/output/os_*.csv
 # =======================================================================
@@ -25,9 +39,11 @@ LH   <- "Longhill High School"
 PCHS <- "Peacehaven Community School"
 DS   <- "Dorothy Stringer School"
 
-BETA_C  <- 2.0;  BETA_BAND  <- c(1.4, 2.0, 2.6)
+BETA_C  <- 1.7;  BETA_BAND  <- c(1.4, 1.7, 2.6)
 GAMMA_C <- 1.2;  GAMMA_BAND <- c(0.4, 1.2, 2.0)
-W_C     <- "W_prefs"; W_BAND <- c("W_pan", "W_prefs", "W_att8")
+W_C     <- "W_wprefs"
+W_BAND  <- c("W_pan", "W_prefs", "W_wprefs", "W_att8")
+stopifnot(BETA_C %in% BETA_BAND, GAMMA_C %in% GAMMA_BAND, W_C %in% W_BAND)
 
 YEARS <- c(2026, 2028, 2030, 2033, 2035)
 PANS  <- c(240, 210, 180, 150, 120)   # 210 is in force for 2026/27
@@ -54,15 +70,40 @@ perf_open <- panel %>%
             fsm  = mean(PTFSM6CLA1A, na.rm = TRUE),
             absence = mean(PERCTOT, na.rm = TRUE), .groups = "drop")
 
+# Two ways of counting how heavily a school is asked for, deliberately
+# kept side by side:
+#
+#   prefs_per_place   first preferences in the single 2024 round, which
+#                     is what `adm` carries
+#   wprefs_per_place  ranks 1-3 geometrically discounted, averaged over
+#                     the five rounds to 2026 (01a), which is the
+#                     bundle's central attractiveness specification
+#
+# The first is one round and one rank; the second is five rounds and
+# three ranks. Reporting only the first invited the obvious objection
+# that the paired catchments split each catchment's first preferences
+# between two schools, so a school families put second reads as one
+# nobody wanted. Both are reported, and the regressions below are run on
+# both, so the difference is visible rather than a matter of which
+# document a reader happens to be holding.
 choice <- adm %>%
   transmute(urn, school, pan = pan2024, first_pref = first_pref_count) %>%
   left_join(perf_open, by = "urn") %>%
-  mutate(prefs_per_place = first_pref / pan, log_ppp = log(prefs_per_place))
+  left_join(inp$attract %>% select(urn, wprefs_per_place), by = "urn") %>%
+  mutate(prefs_per_place = first_pref / pan,
+         log_ppp  = log(prefs_per_place),
+         log_wppp = log(wprefs_per_place))
+
+stopifnot(!any(is.na(choice$wprefs_per_place)))
 
 choice_models <- list(
   "Attainment 8"          = lm(log_ppp ~ att8, data = choice),
   "Value-added"           = lm(log_ppp ~ va,   data = choice),
-  "Attainment 8 + value-added" = lm(log_ppp ~ att8 + va, data = choice)
+  "Attainment 8 + value-added" = lm(log_ppp ~ att8 + va, data = choice),
+  "Attainment 8, weighted preferences"  = lm(log_wppp ~ att8, data = choice),
+  "Value-added, weighted preferences"   = lm(log_wppp ~ va,   data = choice),
+  "Attainment 8 + value-added, weighted preferences" =
+    lm(log_wppp ~ att8 + va, data = choice)
 )
 
 choice_tbl <- purrr::imap_dfr(choice_models, function(m, nm) {
@@ -306,6 +347,34 @@ message(sprintf("\n=== 5. Validation against published offers: R2 = %.3f, RMSE =
 print(as.data.frame(val %>% mutate(across(where(is.numeric), round),
                                    diff = modelled - observed)), row.names = FALSE)
 
+# --- Is the central specification the one that fits best? ------------
+# The central values are a choice, and a choice worth testing rather
+# than asserting. Every combination of the swept beta and W is run
+# against the same published offers, so the specification this bundle
+# reports can be seen next to the alternatives instead of being taken on
+# trust. This is a weak test - ten schools, and seven of them are capped
+# at their admission number in 2026, so most of the fit is arithmetic -
+# but a central specification that fitted noticeably worse than its
+# neighbours would be worth knowing about.
+
+val_grid <- tidyr::expand_grid(beta = BETA_BAND, w_spec = W_BAND) %>%
+  mutate(fit = purrr::map2(beta, w_spec, function(b, w) {
+    v <- run_open(inp$costs_now, pan_vec(210), current_map, 2026,
+                  beta = b, w_spec = w) %>%
+      select(name, modelled = intake) %>%
+      inner_join(pub_offers, by = "name")
+    tibble(r2 = CalcRSquared(v$observed, v$modelled),
+           rmse = CalcRMSE(v$observed, v$modelled))
+  })) %>%
+  tidyr::unnest(fit) %>%
+  mutate(central = beta == BETA_C & w_spec == W_C)
+
+message("\n  Fit against published 2026 offers, across the band:")
+print(as.data.frame(val_grid %>%
+  arrange(desc(r2)) %>%
+  transmute(beta, W = w_spec, R2 = round(r2, 3), RMSE = round(rmse),
+            ` ` = if_else(central, "<- central", ""))), row.names = FALSE)
+
 
 # ====================================================================
 # 8. Longhill finances (open, DfE returns)
@@ -345,7 +414,7 @@ saveRDS(list(
   choice = choice, choice_tbl = choice_tbl, choice_models = choice_models,
   pip = pip, wards = wards,
   central = central, bands = bands, lh_band = lh_band, natural = natural,
-  val = val, lh_fin = lh_fin, size_fin = size_fin,
+  val = val, val_grid = val_grid, lh_fin = lh_fin, size_fin = size_fin,
   reserve_burn = reserve_burn, years_left = years_left,
   des_now = des_now, des_elm = des_elm,
   configs = purrr::map_chr(CONFIGS, ~ paste0(.x$id, ". ", .x$label)),

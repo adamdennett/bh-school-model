@@ -19,8 +19,8 @@
 #                               published second-preference profile fits
 #                               badly below about 1.5, so that end of the
 #                               range is trimmed on evidence)
-#   W      four specifications  (equal, PAN, published first preferences,
-#                               Attainment 8)
+#   W      five specifications  (equal, PAN, published first preferences,
+#                               rank-weighted preferences, Attainment 8)
 #   gamma  0 to 2.5            (from no catchment effect at all, to a
 #                               twelve-fold odds multiplier)
 #   years  2026, 2030, 2035
@@ -42,7 +42,7 @@ LH <- "Longhill High School"
 # --- The sweep -------------------------------------------------------
 BETAS  <- seq(1.5, 3.2, by = 0.1)
 GAMMAS <- c(0, 0.8, 1.6, 2.4)
-W_SPECS <- c("W_equal", "W_pan", "W_prefs", "W_att8")
+W_SPECS <- c("W_equal", "W_pan", "W_prefs", "W_wprefs", "W_att8")
 YEARS  <- c(2026, 2030, 2035)
 SITES  <- c("Ovingdean" = "now", "Elm Grove" = "elm")
 PANS   <- c(240, 210, 180, 150, 120)   # 210 is in force for 2026/27
@@ -132,7 +132,9 @@ env <- env %>%
   mutate(site_label = if_else(site == "now", "Ovingdean", "Elm Grove"),
          w_label = dplyr::recode(w_spec,
            W_equal = "All schools equal", W_pan = "Proportional to PAN",
-           W_prefs = "Published first preferences", W_att8 = "Attainment 8"),
+           W_prefs = "Published first preferences",
+           W_wprefs = "Weighted preferences (ranks 1-3)",
+           W_att8 = "Attainment 8"),
          regime_label = purrr::map_chr(regime, ~ CATCHMENT_REGIMES[[.x]]$label))
 
 # The headline questions below are asked of the regime actually in force.

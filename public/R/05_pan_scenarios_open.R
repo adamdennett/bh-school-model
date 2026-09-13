@@ -36,10 +36,11 @@ BACA <- "Brighton Aldridge Community Academy"
 
 YEARS <- c(2026, 2030, 2035)
 
-# The central specification used elsewhere in this bundle
-BETA  <- 2.0
+# The central specification used elsewhere in this bundle. Kept in step
+# with 03_open_scenarios.R by hand; if that moves, this must move with it.
+BETA  <- 1.7
 GAMMA <- 1.2
-WSPEC <- "W_prefs"
+WSPEC <- "W_wprefs"
 
 zones   <- inp$zones
 attract <- inp$attract

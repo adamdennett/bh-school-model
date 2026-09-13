@@ -31,6 +31,17 @@
 #     Elm Grove site directly instead of approximating it
 #   - the relocated case is run on the same footing as the current one
 #
+# A SECOND RUN sits alongside the distance-only one, at the bundle's
+# central specification: beta 1.7 and W_j set to rank-weighted published
+# preferences. The distance-only run answers "where would children go if
+# the schools differed only in where they stand?", which is the question
+# this file exists to ask and which needs W identical. It cannot answer
+# "where would children go given what families actually want?", because
+# it has assumed that away. The two are reported together: the first is
+# a statement about the geography of the city, the second about the
+# geography plus the demand, and the gap between them is what
+# attractiveness is doing.
+#
 # Inputs : public/output/open_inputs.rds
 # Outputs: public/output/brightopia.rds, fig_brightopia_*.png
 # ======================================================================
@@ -51,7 +62,8 @@ LH  <- "Longhill High School"
 CITY_SCHOOLS <- inp$schools$name[inp$schools$name != "Peacehaven Community School"]
 
 BETAS_B <- seq(0.5, 3.0, by = 0.1)
-BETA_ORIGINAL <- 1.5
+BETA_ORIGINAL <- 1.5   # what the original used; kept for the reproduction
+BETA_REF      <- 1.7   # the bundle's central decay, used for the W run
 
 zones_city <- inp$zones %>% filter(area != "Expansion area")
 
@@ -60,7 +72,9 @@ zones_city <- inp$zones %>% filter(area != "Expansion area")
 #' @param site "now" or "elm"
 #' @param beta distance decay
 #' @param scope "city" or "expanded"
-brightopia <- function(site, beta, scope = "city") {
+#' @param w_spec NULL for the distance-only world in which every school
+#'   is identical, or a column of inp$attract to use as W_j
+brightopia <- function(site, beta, scope = "city", w_spec = NULL) {
 
   z    <- if (scope == "city") zones_city else inp$zones
   keep <- if (scope == "city") CITY_SCHOOLS else inp$schools$name
@@ -69,11 +83,18 @@ brightopia <- function(site, beta, scope = "city") {
   d <- cost %>%
     filter(name %in% keep) %>%
     inner_join(z %>% select(zone, Oi), by = "zone") %>%
-    filter(is.finite(cij), Oi > 0) %>%
+    filter(is.finite(cij), Oi > 0)
+
+  if (is.null(w_spec)) {
     # Every school identical. The value is arbitrary — in a
     # production-constrained model with a common W it cancels in A_i —
     # but 100 is what the original used.
-    mutate(Wj = 100)
+    d$Wj <- 100
+  } else {
+    w <- inp$attract %>% select(name, Wj = all_of(w_spec))
+    stopifnot(all(keep %in% w$name))
+    d <- d %>% inner_join(w, by = "name")
+  }
 
   d <- prod_constrained_sim(d, o_col = "Oi", w_col = "Wj", c_col = "cij",
                             orig_col = "zone", dest_col = "name",
@@ -83,7 +104,8 @@ brightopia <- function(site, beta, scope = "city") {
     group_by(name) %>%
     summarise(modelled = sum(sim_flow),
               mean_travel = weighted.mean(cij, sim_flow), .groups = "drop") %>%
-    mutate(site = site, beta = beta, scope = scope)
+    mutate(site = site, beta = beta, scope = scope,
+           w_spec = w_spec %||% "identical")
 }
 
 # ====================================================================
@@ -122,13 +144,37 @@ accessibility <- function(beta = BETA_ORIGINAL) {
 sch_xy <- inp$schools %>% filter(name %in% CITY_SCHOOLS) %>%
   select(name, easting, northing)
 
-competition <- tidyr::expand_grid(name = sch_xy$name, k = sch_xy$name) %>%
-  filter(name != k) %>%
-  left_join(sch_xy, by = "name") %>%
-  left_join(sch_xy %>% rename(k = name, ke = easting, kn = northing), by = "k") %>%
-  mutate(d_km = pmax(euclid_m(easting, northing, ke, kn) / 1000, 0.1)) %>%
-  group_by(name) %>%
-  summarise(C_j = sum(d_km^-SIGMA), .groups = "drop")
+#' Fotheringham's competing-destinations term
+#'
+#' C_j = sum_{k != j} W_k d_jk^-sigma
+#'
+#' The weights matter. In the distance-only world every school is
+#' identical, so W_k drops out and the term is a pure count of how much
+#' company a school has — which is what this file computed, correctly,
+#' when the distance-only run was the only run. Once W_j is real, an
+#' unweighted term says a school is equally crowded by a rival nobody
+#' asks for as by one everybody does, which is not what competition
+#' means. Both versions are computed and reported.
+#'
+#' @param w named vector of attractiveness, or NULL for identical schools
+compete <- function(w = NULL) {
+  pairs <- tidyr::expand_grid(name = sch_xy$name, k = sch_xy$name) %>%
+    filter(name != k) %>%
+    left_join(sch_xy, by = "name") %>%
+    left_join(sch_xy %>% rename(k = name, ke = easting, kn = northing),
+              by = "k") %>%
+    mutate(d_km = pmax(euclid_m(easting, northing, ke, kn) / 1000, 0.1),
+           Wk   = if (is.null(w)) 1 else unname(w[k]))
+  stopifnot(!any(is.na(pairs$Wk)))
+  pairs %>%
+    group_by(name) %>%
+    summarise(C_j = sum(Wk * d_km^-SIGMA), .groups = "drop")
+}
+
+competition <- compete()   # the distance-only world: W_k identical
+
+W_WPREFS <- with(inp$attract, setNames(W_wprefs, name))
+competition_w <- compete(W_WPREFS) %>% rename(C_j_w = C_j)
 
 
 # --- The headline run, at the original beta --------------------------
@@ -158,8 +204,10 @@ b_now <- b_now %>%
   mutate(share_index = modelled / EQUAL_SHARE) %>%
   left_join(accessibility(), by = "name") %>%
   left_join(competition, by = "name") %>%
-  mutate(access_index  = 100 * A_hansen / mean(A_hansen),
-         compete_index = 100 * C_j / mean(C_j),
+  left_join(competition_w, by = "name") %>%
+  mutate(access_index    = 100 * A_hansen / mean(A_hansen),
+         compete_index   = 100 * C_j / mean(C_j),
+         compete_index_w = 100 * C_j_w / mean(C_j_w),
          # kept under the old name so nothing downstream breaks, but it
          # is a market share and is no longer presented as a site score
          site_index = share_index)
@@ -169,12 +217,15 @@ print(as.data.frame(b_now %>%
   transmute(School = name,
             `Children reachable` = round(access_index),
             `Rivals nearby` = round(compete_index),
+            `Rivals nearby, weighted` = round(compete_index_w),
             `Brightopia intake` = round(100 * share_index),
             `Mean journey` = round(mean_travel, 1)) %>%
   arrange(desc(`Children reachable`))), row.names = FALSE)
 
 message(sprintf("  Correlation between reach and crowding: %.2f",
                 cor(log(b_now$access_index), log(b_now$compete_index))))
+message(sprintf("  Unweighted against weighted crowding: %.2f",
+                cor(log(b_now$compete_index), log(b_now$compete_index_w))))
 
 message(sprintf("\nAt beta = %.1f: %d city schools, %s places, %s children — the average school fills to %.0f%%, and an equal share would be %.0f children.",
                 BETA_ORIGINAL, length(CITY_SCHOOLS),
@@ -188,6 +239,150 @@ print(as.data.frame(b_now %>%
             `Rivals nearby` = round(compete_index),
             `% of PAN` = round(100 * fill)) %>%
   arrange(`Children reachable`)), row.names = FALSE)
+
+# --- The same city, but with what families want put back in ----------
+# Same geography, same routed times, same production constraint. The one
+# change is that W_j is no longer identical: it is the rank-weighted
+# published preference rate from 01a, and beta is the bundle's central
+# 1.7 rather than the original's 1.5.
+#
+# This is the run that matches the equation as it is usually written,
+# T_ij = A_i O_i W_j^alpha c_ij^-beta, with a W_j that varies. The
+# distance-only run above is the same equation with W_j held constant,
+# and the difference between the two is the whole of what attractiveness
+# contributes.
+
+b_wpref <- brightopia("now", BETA_REF, w_spec = "W_wprefs") %>%
+  left_join(pan, by = "name") %>%
+  left_join(competition_w, by = "name") %>%
+  mutate(surplus     = modelled - pan2024,
+         fill        = modelled / pan2024,
+         share_index = modelled / EQUAL_SHARE,
+         compete_index_w = 100 * C_j_w / mean(C_j_w))
+
+# The distance-only run above is at the ORIGINAL beta of 1.5, because
+# reproducing the original is what it is for. Comparing it against the
+# demand run would therefore vary beta and W at once and report the sum
+# as though it were the effect of W. So the comparison is made against a
+# distance-only run at the same beta, and the only difference between
+# the two columns is what families want.
+b_geog_ref <- brightopia("now", BETA_REF) %>%
+  left_join(pan, by = "name") %>%
+  left_join(accessibility(BETA_REF), by = "name") %>%
+  left_join(competition, by = "name") %>%
+  mutate(surplus       = modelled - pan2026,
+         fill          = modelled / pan2026,
+         share_index   = modelled / EQUAL_SHARE,
+         access_index  = 100 * A_hansen / mean(A_hansen),
+         compete_index = 100 * C_j / mean(C_j))
+
+b_compare <- b_geog_ref %>%
+  select(name, geog_only = modelled, access_index, compete_index,
+         pan2024, pan2026) %>%
+  left_join(b_wpref %>% select(name, with_demand = modelled), by = "name") %>%
+  mutate(shift = with_demand - geog_only,
+         shift_pct = 100 * shift / geog_only)
+
+message(sprintf(
+  "\n=== Geography alone against geography plus demand, both at beta %.1f ===",
+  BETA_REF))
+print(as.data.frame(b_compare %>%
+  arrange(shift) %>%
+  transmute(School = name, `PAN 2026` = pan2026,
+            `Geography only` = round(geog_only),
+            `With demand` = round(with_demand),
+            Shift = round(shift),
+            `%` = sprintf("%+.0f", shift_pct))), row.names = FALSE)
+
+message(sprintf("  Schools that geography alone would fill to PAN 2026: %d of %d",
+                sum(b_compare$geog_only >= b_compare$pan2026), nrow(b_compare)))
+message(sprintf("  Schools that geography plus demand would fill:        %d of %d",
+                sum(b_compare$with_demand >= b_compare$pan2026), nrow(b_compare)))
+
+
+# --- How far does geography alone actually get you? ------------------
+# The distance-only model against the offers the council actually made.
+# The year has to match and it is easy to get wrong: Brightopia's Oi is
+# the entry cohort for OBS_YEAR, so the offers it is compared against
+# must be that same round rather than whichever round happens to be in
+# the admissions extract. (03's own validation compares a 2026 modelled
+# intake against the 2024 offers in that extract; this does not.)
+#
+# Nothing is capped here, so a school whose modelled intake exceeds its
+# admission number is showing demand the real round would have turned
+# away. Read the shares, not just the counts.
+
+OBS_YEAR <- inp$demand_ts %>%
+  filter(area == "Brighton & Hove") %>%
+  slice_min(abs(state_demand - CITY_CHILDREN), n = 1) %>%
+  pull(entry_year)
+
+fs_obs <- readRDS(file.path(PUBLIC_OUT, "factsheet_panel.rds"))$factsheets %>%
+  filter(name != "Total", year == OBS_YEAR) %>%
+  select(name, observed = off_total)
+
+b_obs <- b_now %>%                       # the original: W identical, beta 1.5
+  select(name, pan2026, modelled_15 = modelled) %>%
+  left_join(b_geog_ref %>% select(name, modelled_17 = modelled), by = "name") %>%
+  left_join(b_wpref  %>% select(name, modelled_w = modelled), by = "name") %>%
+  inner_join(fs_obs, by = "name") %>%
+  mutate(diff_15    = modelled_15 - observed,
+         diff_17    = modelled_17 - observed,
+         diff_w     = modelled_w  - observed,
+         share_mod  = 100 * modelled_17 / sum(modelled_17),
+         share_obs  = 100 * observed / sum(observed),
+         share_diff = share_mod - share_obs,
+         # A school that offered its admission number or more was
+         # rationing places. Its observed figure is a ceiling, not a
+         # measure of demand, so an uncapped model SHOULD exceed it and
+         # the two groups have to be judged separately.
+         at_ceiling = observed >= pan2026)
+
+stopifnot(nrow(b_obs) == length(CITY_SCHOOLS))
+
+message(sprintf(
+  "\n=== The distance-only model against the %d offers actually made (%d round) ===",
+  sum(b_obs$observed), OBS_YEAR))
+print(as.data.frame(b_obs %>%
+  arrange(diff_17) %>%
+  transmute(School = name, `PAN 2026` = pan2026,
+            Observed = observed,
+            `Brightopia b=1.5` = round(modelled_15),
+            `Brightopia b=1.7` = round(modelled_17),
+            Diff = sprintf("%+.0f", diff_17),
+            `Share obs %` = round(share_obs, 1),
+            `Share mod %` = round(share_mod, 1))), row.names = FALSE)
+
+message(sprintf(
+  "  Geography alone against observed: R2 = %.3f, RMSE = %.0f (beta %.1f); R2 = %.3f, RMSE = %.0f (beta %.1f)",
+  CalcRSquared(b_obs$observed, b_obs$modelled_17),
+  CalcRMSE(b_obs$observed, b_obs$modelled_17), BETA_REF,
+  CalcRSquared(b_obs$observed, b_obs$modelled_15),
+  CalcRMSE(b_obs$observed, b_obs$modelled_15), BETA_ORIGINAL))
+message(sprintf("  Largest over-prediction: %s (%+.0f); largest under: %s (%+.0f)",
+                b_obs$name[which.max(b_obs$diff_17)], max(b_obs$diff_17),
+                b_obs$name[which.min(b_obs$diff_17)], min(b_obs$diff_17)))
+
+# Does adding W_j move the model towards the offers actually made? Only
+# the schools that were NOT rationing places can answer: for the rest
+# the observed figure is a ceiling, so an uncapped model exceeding it is
+# not an error.
+message("\n  Does adding W_j close the gap to observed? (uncapped schools only)")
+print(as.data.frame(b_obs %>%
+  filter(!at_ceiling) %>%
+  arrange(abs(diff_w)) %>%
+  transmute(School = name, Observed = observed,
+            `Geography only` = round(modelled_17), `Gap` = sprintf("%+.0f", diff_17),
+            `With demand` = round(modelled_w), `Gap ` = sprintf("%+.0f", diff_w),
+            Closer = if_else(abs(diff_w) < abs(diff_17), "yes", "no"))),
+  row.names = FALSE)
+
+b_unc <- b_obs %>% filter(!at_ceiling)
+message(sprintf(
+  "  Mean absolute gap on those %d: %.0f on geography alone, %.0f with demand (%d of %d closer)",
+  nrow(b_unc), mean(abs(b_unc$diff_17)), mean(abs(b_unc$diff_w)),
+  sum(abs(b_unc$diff_w) < abs(b_unc$diff_17)), nrow(b_unc)))
+
 
 # --- The same, with Longhill at the top of Elm Grove -----------------
 
@@ -339,11 +534,18 @@ ggsave(file.path(PUBLIC_OUT, "fig_brightopia_beta.png"), p2,
 
 saveRDS(list(
   at_original_beta = b_now,
+  geog_only_at_ref = b_geog_ref,
+  with_demand      = b_wpref,
+  demand_compare   = b_compare,
+  observed_compare = b_obs,
+  observed_year    = OBS_YEAR,
   relocated        = b_elm,
   expanded         = b_exp,
   sweep            = sweep,
   lh_sweep         = lh_sweep,
   beta_original    = BETA_ORIGINAL,
+  beta_ref         = BETA_REF,
+  w_spec_demand    = "W_wprefs",
   betas            = BETAS_B,
   city_schools     = CITY_SCHOOLS,
   city_children    = CITY_CHILDREN,
@@ -352,6 +554,7 @@ saveRDS(list(
   equal_share      = EQUAL_SHARE,
   sigma            = SIGMA,
   competition      = competition,
+  competition_w    = competition_w,
   run_at           = Sys.time()
 ), file.path(PUBLIC_OUT, "brightopia.rds"))
 

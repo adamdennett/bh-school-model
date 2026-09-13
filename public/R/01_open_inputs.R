@@ -313,6 +313,11 @@ predict_time <- function(km, school, use_mean = FALSE) {
          ifelse(use_mean, mean_eff, own), 1)
 }
 
+# Children's walking pace and street circuity, used to cap implausible
+# routed journeys. See the note inside build_costs_open().
+WALK_KMH      <- 1.030 / (14.22 / 60)   # Kent et al. (2026): 4.34 km/h
+WALK_CIRCUITY <- 1.3
+
 #' Full zone x school cost table, with Longhill optionally relocated
 #'
 #' Where the routed matrix has a value it is used. The relocation now has a
@@ -344,11 +349,31 @@ build_costs_open <- function(lh_site = NULL) {
     mutate(
       routed = is.finite(cij),
       cij = if_else(routed, cij,
-                    predict_time(km, name, use_mean = moved & !ROUTED_ELM))
+                    predict_time(km, name, use_mean = moved & !ROUTED_ELM)),
+      # ---- Walking is always available ------------------------------
+      # Where the bus network is awkward the router returns a poor
+      # itinerary: about a fifth of pairs came out slower than simply
+      # walking the distance, in one case 99 minutes for 4 km. That is a
+      # property of the router, not of the city, and it inflates the
+      # modelled cost of exactly the short awkward trips that matter
+      # most. Cap every journey at the time it would take to walk.
+      #
+      # Speed is derived from Kent et al. (2026), a systematic review of
+      # active school travel: children's mean walking trip is 1,030 m in
+      # 14.22 minutes, or 4.34 km/h. CIRCUITY converts the straight-line
+      # distance here into street distance.
+      #
+      # This is a ceiling on modelled journey time, not a claim that
+      # children walk that far. The same review finds they walk about a
+      # kilometre on average and rarely beyond 1.8 km.
+      walk_min = km * WALK_CIRCUITY / WALK_KMH * 60,
+      walk_capped = cij > walk_min,
+      cij = pmin(cij, walk_min)
     )
 
   attr(out, "pct_routed") <- 100 * mean(out$routed)
-  out %>% select(zone, name, cij, km, routed)
+  attr(out, "pct_walk_capped") <- 100 * mean(out$walk_capped)
+  out %>% select(zone, name, cij, km, routed, walk_capped)
 }
 
 costs_now <- build_costs_open(NULL)
@@ -357,6 +382,8 @@ costs_elm <- build_costs_open(ELM_GROVE)
 message(sprintf("  Cost tables: %s pairs | routed %.0f%% (current sites), %.0f%% (relocated)",
                 format(nrow(costs_now), big.mark = ","),
                 100 * mean(costs_now$routed), 100 * mean(costs_elm$routed)))
+message(sprintf("  Walk fallback (%.2f km/h x %.1f circuity) binds on %.0f%% of pairs",
+                WALK_KMH, WALK_CIRCUITY, 100 * mean(costs_now$walk_capped)))
 
 if (ROUTED_ELM) {
   cmp <- costs_now %>%
@@ -406,7 +433,8 @@ perf <- panel %>%
 fp <- readRDS(file.path(PUBLIC_OUT, "factsheet_panel.rds"))
 
 prefs <- fp$attract_panel %>%
-  select(name, prefs_per_place, mean_first_prefs = pref1, n_years)
+  select(name, prefs_per_place, wprefs_per_place,
+         mean_first_prefs = pref1, n_years)
 
 message("  Attractiveness from the ", fp$attract_from, "-onwards factsheet mean (",
         max(prefs$n_years), " rounds)")
@@ -414,7 +442,8 @@ message("  Attractiveness from the ", fp$attract_from, "-onwards factsheet mean 
 attract <- SCHOOLS_OPEN %>%
   select(urn, name, pan = pan2024) %>%
   left_join(perf, by = "urn") %>%
-  left_join(prefs %>% select(name, prefs_per_place), by = "name") %>%
+  left_join(prefs %>% select(name, prefs_per_place, wprefs_per_place),
+            by = "name") %>%
   mutate(
     # Peacehaven is outside the council's factsheets; use its own area's
     # published figures as the best open stand-in.
@@ -422,19 +451,35 @@ attract <- SCHOOLS_OPEN %>%
     p8 = if_else(is.na(p8) | is.nan(p8), NA_real_, p8),
     va_lever = if_else(is.na(va_lever) | is.nan(va_lever), NA_real_, va_lever),
     fsm = if_else(is.na(fsm) | is.nan(fsm), NA_real_, fsm),
+    # Peacehaven is outside the council's factsheets, so both preference
+    # measures are missing for it and both are filled the same way: at
+    # the lowest observed rate in the city. That is an assumption, not a
+    # measurement, and it is a consequential one - a weak Peacehaven
+    # keeps eastern children at Longhill and flatters Longhill's
+    # position. It is carried through unchanged from the first-
+    # preference spec so the two remain comparable.
     prefs_per_place = if_else(is.na(prefs_per_place),
                               min(prefs_per_place, na.rm = TRUE), prefs_per_place),
+    wprefs_per_place = if_else(is.na(wprefs_per_place),
+                               min(wprefs_per_place, na.rm = TRUE), wprefs_per_place),
     W_equal  = 1,
     W_pan    = pan / mean(pan),
     W_prefs  = prefs_per_place / mean(prefs_per_place),
+    # Ranks 1-3, geometrically discounted, built in 01a. This is the
+    # central specification: a first-preference count reads a school
+    # families put second as one nobody wanted, which is precisely what
+    # the paired catchments force half the city to do.
+    W_wprefs = wprefs_per_place / mean(wprefs_per_place),
     W_att8   = exp(0.093 * (att8 - mean(att8)))   # slope from the open stage-2 form
   )
 
-message("  Specifications: equal, PAN, published first preferences, Attainment 8")
+message("  Specifications: equal, PAN, first preferences, WEIGHTED preferences, Attainment 8")
 print(as.data.frame(attract %>%
   transmute(School = name, PAN = pan, ATT8 = round(att8, 1),
             `Prefs/place` = round(prefs_per_place, 2),
+            `Wtd/place` = round(wprefs_per_place, 2),
             W_pan = round(W_pan, 2), W_prefs = round(W_prefs, 2),
+            W_wprefs = round(W_wprefs, 2),
             W_att8 = round(W_att8, 2))), row.names = FALSE)
 
 

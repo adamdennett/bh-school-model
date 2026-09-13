@@ -182,12 +182,21 @@ read_open_rds <- function(path)      readRDS(assert_open(path))
 
 SCHOOLS_OPEN <- tibble::tribble(
   ~urn,   ~short,         ~name,                                   ~easting, ~northing, ~catchment,    ~faith, ~pan2024, ~pan2026, ~pan2030,
-  114579, "varndean",     "Varndean School",                          531232,    107295, "DS_Varndean", FALSE,      300,      270,      240,
+  114579, "varndean",     "Varndean School",                          531232,    107295, "DS_Varndean", FALSE,      300,      300,      240,
   # 2026/27 numbers follow the adjudicator's determination of 20 October
   # 2025 (ADA4423, ADA4452-4454, ADA4456, ADA4458), which is binding: the
   # council's proposed reductions at Blatchington Mill and Dorothy
   # Stringer (330 -> 300) were overturned and both stay at 330. Longhill's
   # reduction from 270 to 210 was unopposed and stands.
+  #
+  # Varndean is NOT in that determination and its 2026 number is 300, not
+  # the 270 recorded here previously. The error was visible in the
+  # outputs and went unnoticed: Varndean offered 300 places in the 2026
+  # round, which read as a school over-offering by 30 against its own
+  # admission number. Schools do exceed their PAN, so the figure was not
+  # absurd enough to challenge on its own - the check that catches it is
+  # the assertion below, which requires every school's 2026 offers to be
+  # no more than its 2026 PAN unless the excess is recorded here.
   114580, "ds",           "Dorothy Stringer School",                  530794,    107134, "DS_Varndean", FALSE,      330,      330,      270,
   114581, "longhill",     "Longhill High School",                     536239,    103942, "Longhill",    FALSE,      270,      210,      180,
   114606, "blatchington", "Blatchington Mill School",                 528137,    106649, "Hove_Blatch", FALSE,      330,      330,      240,
@@ -196,7 +205,11 @@ SCHOOLS_OPEN <- tibble::tribble(
   114611, "cardinal_n",   "Cardinal Newman Catholic School",          529812,    105778, NA_character_, TRUE,       360,      360,      360,
   136164, "baca",         "Brighton Aldridge Community Academy",      534234,    108203, "BACA",        FALSE,      180,      180,      180,
   137063, "paca",         "Portslade Aldridge Community Academy",     524992,    107180, "PACA",        FALSE,      220,      220,      220,
-  139409, "kings",        "King's School",                            527377,    107625, NA_character_, TRUE,       165,      165,      165,
+  # King's allocated September 2026 to 180, the PAN the council's 2027-28
+  # admissions guide gives. 165 stands for the earlier rounds, where it
+  # offered 15 over (PAN_OVER_ALLOWED in 01a_factsheet_panel.R). pan2030
+  # follows 2026, since 165 there meant unchanged rather than a cut.
+  139409, "kings",        "King's School",                            527377,    107625, NA_character_, TRUE,       165,      180,      180,
   # Joins Brighton & Hove on 1 April 2028 under the boundary change.
   # PAN is GIAS capacity spread over five year groups.
   144661, "peacehaven",   "Peacehaven Community School",              541262,    101530, "Peacehaven",  FALSE,      180,      180,      180
