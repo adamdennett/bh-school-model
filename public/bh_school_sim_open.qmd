@@ -1331,7 +1331,7 @@ Apply each catchment's own ratio and the council's forecast for Longhill sits **
 
 **This is where the sleepwalking risk actually sits.** The council's forecast already looks pessimistic about Longhill relative to other catchments, and it is *still* not pessimistic enough. Its 23.89% leakage deduction is applied to a cohort figure that assumes Longhill converts its catchment at something like the city-wide rate. It does not, and has not for at least six years.
 
-The calibrated behavioural model reaches the same place independently and goes further: around 79 children by 2035, below both lines above.
+The calibrated behavioural model reaches the same place independently and goes further: around `r round(with(readRDS(file.path(PUBLIC_OUT, "model_terms.rds"))$calibrated$relocation$central, natural[id == "A" & entry_year == 2035]))` children by 2035, below both lines above.
 
 Two consequences follow. First, decisions about Longhill's admission number are being taken against a demand figure that the school's own primary catchment does not support. Second, using leakage as the sole adjustment is self-reinforcing as a planning device — a high assumed leakage justifies shrinking the school, and a shrinking school raises leakage — while never asking the question that matters, which is *what would change the conversion rate*.
 :::
@@ -1360,6 +1360,18 @@ tot_25 <- lh_out$total[lh_out$round == "2025/26"]
 ```
 
 **The Longhill catchment accounts for `r round(min(lh_out$share))`–`r round(max(lh_out$share))`% of every child who leaves Brighton & Hove for a school elsewhere.** In the most recent round it was `r lh_25` children of `r tot_25` city-wide. Every other catchment loses single figures.
+
+**Where they go is published too.** The council's answer to a Freedom of Information request, [published on WhatDoTheyKnow](https://www.whatdotheyknow.com/request/schools_admissions_breakdowns_fo), gives every school each catchment's children were offered a place at in the 2024 round, including schools outside the city, with counts under five suppressed:
+
+```{r dest-2024}
+dest24 <- readRDS(file.path(PUBLIC_OUT, "destinations_2024.rds"))
+dest24$outside %>%
+  transmute(Catchment = catchment, School = school, Area = area, Offers = n) %>%
+  arrange(Catchment, desc(suppressWarnings(as.numeric(Offers)))) %>%
+  tbl(caption = "Offers on national offer day at schools outside Brighton & Hove, 2024 round, by home catchment. '<5' is suppressed by the council. Source: Brighton & Hove City Council, FOI response published on WhatDoTheyKnow.")
+```
+
+Longhill's catchment was offered `r dest24$outside$n[dest24$outside$catchment == "Longhill" & dest24$outside$school == "Priory School"]` places at Priory School in Lewes, and fewer than five each at Peacehaven and Seahaven. The handful from Hove, Portslade and Stringer / Varndean went to West Sussex and London. The calibrated model in @sec-relocation-m5 carries the four East Sussex schools as destinations, fitted to this table.
 
 This is the strongest published evidence in this document, and it changes what can be said. The council's `r "23.89"`% leakage assumption is not an arbitrary planning parameter — it is measuring something real and specific, concentrated almost entirely in one catchment. Set against a Longhill catchment cohort of roughly 290 children, `r lh_25` leavers is about `r round(100 * lh_25 / 291)`%, which is the same order as the rate the council applies.
 
@@ -1730,7 +1742,7 @@ The direction of the correction is solid; the magnitude is not.
 
 Everything above runs one catchment term for the whole city, swept around a central `r os$spec$gamma`, with attractiveness taken straight from preferences per place. For this question that is the model's most consequential simplification, because a move trades between two groups of families: those in Longhill's own catchment, whom it moves the school away from, and those near Elm Grove, most of whom live in the Stringer / Varndean catchment. Fitted to the council's catchment preference table, the catchment term is strongest in exactly those two places --- `r sprintf("%.1f", cal_g[["Longhill"]])` in Longhill and `r sprintf("%.1f", cal_g[["DS_Varndean"]])` in Stringer / Varndean, against `r sprintf("%.1f", min(cal_g))` in `r cal_g_lab[names(which.min(cal_g))]`.
 
-The same seven configurations, re-run under that model --- the strategic view's calibrated model, M5 --- with the same admission numbers, the same designed maps and the same cohort projection. One thing does differ from the runs above: a child refused at a full school is re-offered a place the way a second preference would be --- at the other school of a paired catchment first, then in proportion to where the family's catchment puts its second preferences, and only at schools with room --- rather than in proportion to first preferences:
+The same seven configurations, re-run under that model --- the strategic view's calibrated model, M5 --- with the same admission numbers, the same designed maps and the same cohort projection. Two things differ from the runs above. A child refused at a full school is re-offered a place the way a second preference would be --- at the other school of a paired catchment first, then in proportion to where the family's catchment puts its second preferences, and only at schools with room --- rather than in proportion to first preferences. And children can leave the city: Priory School in Lewes, Peacehaven, Seahaven and Seaford Head are destinations, each with an attractiveness of its own and one decay on straight-line distance, fitted to the published 2024 offers by catchment and destination (@sec-outflow). Straight-line, because the bus network has no Woodingdean to Lewes service and the routed journey goes through Brighton:
 
 ```{r reloc-m5}
 rl5$central %>%
@@ -1743,7 +1755,7 @@ rl5$central %>%
 
 **Moving on its own costs Longhill about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year.** At Ovingdean it draws `r m5n("A", 2026)` children in 2026 and `r m5n("A", 2035)` in 2035; at Elm Grove behind today's catchments, `r m5n("C", 2026)` and `r m5n("C", 2035)`. The families it moves away from are the ones most attached to it, and the families it moves towards are the ones most attached to Stringer and Varndean.
 
-**Moving with redrawn catchments roughly breaks even.** Configuration E draws `r m5n("E", 2026)` in 2026 and `r m5n("E", 2035)` in 2035, against `r m5n("B", 2026)` and `r m5n("B", 2035)` for shrinking where it is. The redraw wins back what the move lost and little more. Redrawing without moving costs children too (configuration F, `r m5n("F", 2035)` in 2035), because the designed map passes some of Longhill's hinterland to its neighbours.
+**Moving with redrawn catchments gains a few children.** Configuration E draws `r m5n("E", 2026)` in 2026 and `r m5n("E", 2035)` in 2035, against `r m5n("B", 2026)` and `r m5n("B", 2035)` for shrinking where it is --- about `r round(rl5$move_effect$move_and_redraw[rl5$move_effect$entry_year == 2030])` a year. The redraw wins back what the move lost, and a little more; fewer of Longhill's catchment leave the city under it, `r round(rl5$central$left_city_longhill[rl5$central$id == "E" & rl5$central$entry_year == 2030])` in 2030 against `r round(rl5$central$left_city_longhill[rl5$central$id == "B" & rl5$central$entry_year == 2030])` shrinking in place. Redrawing without moving costs children too (configuration F, `r m5n("F", 2035)` in 2035), because the designed map passes some of Longhill's hinterland to its neighbours.
 
 ```{r reloc-m5-sens}
 rl5$sens %>%
@@ -1754,6 +1766,8 @@ rl5$sens %>%
 ```
 
 **The answer turns on how strongly families follow a map, and the direction is informative.** With the catchment terms halved the site stops mattering for a move on its own --- `r m5s("A", 2030, "Catchment terms halved")` at Ovingdean against `r m5s("C", 2030, "Catchment terms halved")` at Elm Grove in 2030 --- and a move with a redraw gains. So a move looks better the less families follow their catchment and worse the more they do, and the evidence is that they follow it closely. The paired-school exclusivity barely matters here.
+
+**A move sends more of Longhill's own catchment out of the city.** At Ovingdean the model sends `r round(rl5$central$left_city_longhill[rl5$central$id == "A" & rl5$central$entry_year == 2030])` of the catchment's children to East Sussex schools in 2030, most of them to Priory; at Elm Grove behind today's catchments, `r round(rl5$central$left_city_longhill[rl5$central$id == "C" & rl5$central$entry_year == 2030])`.
 
 **None of it rescues the admission number.** On no configuration does Longhill draw 150 children after 2026; by 2035 the best of them draws about `r round(max(rl5$central$natural[rl5$central$entry_year == 2035]))`.
 
@@ -2507,7 +2521,7 @@ I would carry out that work with the council, share the code and the outputs, an
 
 **What this analysis cannot settle**
 
-- *Whether* relocation would help Longhill's roll at all. The swept model says it would. Fitted catchment terms say a move on its own would cost the school about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year and a move with redrawn catchments would roughly break even (@sec-relocation-m5). What decides it is how strongly families would follow a redrawn boundary, which no data here can show.
+- *Whether* relocation would help Longhill's roll at all. The swept model says it would. Fitted catchment terms say a move on its own would cost the school about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year and a move with redrawn catchments would gain about `r round(rl5$move_effect$move_and_redraw[rl5$move_effect$entry_year == 2030])` (@sec-relocation-m5). What decides it is how strongly families would follow a redrawn boundary, which no data here can show.
 - What happens to children academically. This models where they would go, not what happens when they get there — for which see [school_attainment_tool](https://github.com/adamdennett/school_attainment_tool), which finds absence a far more powerful lever than any redistribution of intake.
 - Anything below catchment level about who goes where.
 
@@ -2657,6 +2671,8 @@ If any is wrong, the data to show it exists. We would welcome the correction.
 | School characteristics | DfE [Get Information About Schools](https://get-information-schools.service.gov.uk/) |
 | Attainment, Ofsted, finance | DfE performance tables, via [school_attainment_tool](https://github.com/adamdennett/school_attainment_tool) |
 | Population | ONS small area population estimates, mid-2022 |
+| Offers outside the city, by catchment | Office of the Schools Adjudicator, determination of 20 October 2025, Table 11 |
+| Offers by catchment and destination school, 2024 | Brighton & Hove City Council, FOI response [published on WhatDoTheyKnow](https://www.whatdotheyknow.com/request/schools_admissions_breakdowns_fo) |
 | Boundaries | ONS Open Geography Portal; council catchment map |
 | Reorganisation | [MHCLG decision letters](https://www.gov.uk/government/publications/local-government-reorganisation-decision-letters-to-council-leaders), 16 July 2026 |
 

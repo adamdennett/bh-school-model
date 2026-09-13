@@ -340,7 +340,7 @@ pops_m5 <- purrr::imap_dfr(split(excl_m5, excl_m5$catchment), function(e, h)
                    pop_share = e$share, excluded = rev(e$school))))
 
 m5_table <- function(site = "now", home_col = "catchment", pops = TRUE,
-                     map = NULL, oi = NULL) {
+                     map = NULL, oi = NULL, ext = FALSE) {
   costs <- if (site == "elm") inp$costs_elm else inp$costs_now
   z <- zones_city %>% select(zone, Oi, home = all_of(home_col))
   if (!is.null(oi)) z <- z %>% select(-Oi) %>% inner_join(oi, by = "zone")
@@ -357,6 +357,10 @@ m5_table <- function(site = "now", home_col = "catchment", pops = TRUE,
     left_join(sch_catch, by = "name") %>%
     mutate(in_c = as.numeric(!is.na(sch_catch) & !is.na(map_catch) &
                                sch_catch == map_catch))
+  # Schools outside the city: no catchment in it, so never in catchment.
+  if (ext)
+    x <- bind_rows(x, EXT_COSTS %>% inner_join(z, by = "zone") %>%
+                     filter(is.finite(cij), Oi > 0) %>% mutate(in_c = 0))
   if (pops) {
     x <- x %>% left_join(pops_m5, by = c("home" = "catchment"),
                          relationship = "many-to-many")
@@ -369,11 +373,21 @@ m5_table <- function(site = "now", home_col = "catchment", pops = TRUE,
            orig_id = match(orig, unique(orig)))
 }
 
-m5_flows <- function(x, W, gam) {
+# The out-of-city schools, once fitted below. Until then there are none,
+# and the catchment terms and attractiveness are fitted without them.
+EXT_FIT_M5 <- NULL
+
+m5_flows <- function(x, W, gam, outside = EXT_FIT_M5) {
   cj <- with(compete(W), setNames(C_j, name))
   g <- unname(gam[x$home]); g[is.na(g)] <- 0
   u <- W[x$name] * x$cij^(-BETA_REF) * exp(g * x$in_c) * cj[x$name]^DELTA_HAT
   u[!is.finite(u)] <- 0
+  # A school outside the city: its own attractiveness and a decay on
+  # straight-line distance, no catchment term and no competition term.
+  if (!is.null(outside)) {
+    ex <- x$name %in% names(outside$W)
+    u[ex] <- unname(outside$W[x$name[ex]]) * x$km[ex]^(-outside$decay)
+  }
   den <- rowsum(u, x$orig_id, reorder = FALSE)[, 1]
   as.numeric(x$Oi * u / den[x$orig_id])
 }
@@ -572,15 +586,118 @@ m5_cascade <- function(x, cap)
   as.numeric(cascade_cap(x$sim_flow, x$orig, x$name, x$home, x$pop,
                          KERN_M5, PARTNER_M5, cap))
 
-m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE) {
+# -- Schools outside the city ------------------------------------------------
+# Everything above sends every child to one of the ten city schools. Some
+# go elsewhere, and for Longhill that is most of the question: in the 2024
+# round its catchment's children were offered 38 places at Priory School
+# in Lewes, and fewer than five each at Peacehaven and Seahaven. The
+# council's FOI answer published on WhatDoTheyKnow (01e) gives those
+# offers by catchment and destination; the adjudicator's Table 11 only
+# gives totals, and cannot tell Priory from Peacehaven.
+#
+# So four East Sussex schools are added as destinations, each with an
+# attractiveness of its own, and one decay:
+#
+#   u_ij = W_j * km_ij^(-b)
+#
+# Straight-line distance, not the routed walk and bus time. The bus
+# network has no service from Woodingdean to Lewes, so the router sends
+# those families through Brighton - 71 to 95 minutes - and a model on that
+# cost sends Longhill's leavers to Peacehaven instead of Priory. Families
+# who choose Priory get there some other way.
+#
+# Fitted to each catchment's SHARE of the 2024 offers, so the size of that
+# year's cohort does not matter, by Poisson likelihood with every count the
+# council suppressed ("<5") entered as the interval it is, and every
+# school a catchment did not list as zero. The city model is held where
+# it is: these schools draw children away, they do not change how the city
+# schools compete with each other. On the pre-2024 map, like the rest of
+# M5's fit. West Sussex and London schools, which a few children from Hove,
+# Portslade and Stringer / Varndean go to, are not added.
+DEST_2024 <- read_open_rds(file.path(PUBLIC_OUT, "destinations_2024.rds"))
+EXT_M5 <- tibble::tribble(
+  ~name,                         ~short,         ~urn,   ~easting, ~northing,
+  "Priory School",               "priory_lewes", 114598,   541971,    109666,
+  "Peacehaven Community School", "peacehaven",   144661,   541262,    101530,
+  "Seahaven Academy",            "seahaven",     140679,   543952,    100605,
+  "Seaford Head School",         "seaford_head", 138473,   549440,     98936)
+EXT_NAMES <- EXT_M5$name
+# Not rationed in the model: the fitted offers already carry whatever
+# rationing those schools did, and the numbers are far below their places.
+EXT_CAP <- setNames(rep(1e6, nrow(EXT_M5)), EXT_NAMES)
+
+# Routed minutes are kept for reporting journeys; km is what they choose on.
+ext_routed <- read_open_csv(OPEN$travel) %>%
+  mutate(postcode = normalise_pcd(id)) %>%
+  select(postcode, all_of(paste0("time_", EXT_M5$short))) %>%
+  tidyr::pivot_longer(-postcode, names_to = "short", names_prefix = "time_",
+                      values_to = "t") %>%
+  inner_join(inp$pcd_regime %>% select(postcode, zone), by = "postcode") %>%
+  group_by(zone, short) %>%
+  summarise(routed_min = mean(t, na.rm = TRUE), .groups = "drop")
+EXT_COSTS <- tidyr::expand_grid(zones_city %>% select(zone, zone_e, zone_n),
+                                EXT_M5 %>% select(name, short, easting, northing)) %>%
+  left_join(ext_routed, by = c("zone", "short")) %>%
+  mutate(km = pmax(euclid_m(zone_e, zone_n, easting, northing) / 1000, 0.5),
+         walk_min = km * 1.3 / (1.030 / (14.22 / 60)) * 60,
+         cij = pmin(if_else(is.finite(routed_min), routed_min, walk_min), walk_min)) %>%
+  select(zone, name, cij, km)
+stopifnot(nrow(EXT_COSTS) == nrow(zones_city) * nrow(EXT_M5), all(is.finite(EXT_COSTS$km)))
+
+ext_cells <- tidyr::expand_grid(catchment = DEST_2024$totals$catchment, name = EXT_NAMES) %>%
+  left_join(DEST_2024$offers %>% select(catchment, name = school, published = n, lo, hi),
+            by = c("catchment", "name")) %>%
+  mutate(published = coalesce(published, "0"), lo = coalesce(lo, 0), hi = coalesce(hi, 0)) %>%
+  left_join(DEST_2024$totals, by = "catchment")
+
+x_ext <- m5_table(home_col = "catch_pre2024", ext = TRUE)
+ext_model_cells <- function(fit) {
+  f <- m5_flows(x_ext, W_m5, gam_m5, outside = fit)
+  living <- tapply(f, x_ext$home, sum)
+  tibble(catchment = x_ext$home, name = x_ext$name, f = f) %>%
+    filter(name %in% EXT_NAMES) %>%
+    group_by(catchment, name) %>% summarise(children = sum(f), .groups = "drop") %>%
+    right_join(ext_cells, by = c("catchment", "name")) %>%
+    mutate(children = coalesce(children, 0),
+           expected_2024 = children / unname(living[catchment]) * offered)
+}
+ext_negll <- function(th) {
+  m <- ext_model_cells(list(W = setNames(exp(th[1:4]), EXT_NAMES), decay = th[5]))
+  lam <- pmax(m$expected_2024, 1e-9)
+  -sum(log(pmax(ppois(m$hi, lam) - ppois(m$lo - 1, lam), 1e-300)))
+}
+message("\n=== M5: schools outside the city ===")
+ext_opt <- NULL
+for (b0 in c(2, 4, 8, 11)) {
+  o <- optim(c(rep(0, 4), b0), ext_negll, method = "L-BFGS-B",
+             lower = c(rep(-30, 4), 0.2), upper = c(rep(90, 4), 16))
+  if (is.null(ext_opt) || o$value < ext_opt$value) ext_opt <- o
+}
+EXT_FIT_M5 <- list(W = setNames(exp(ext_opt$par[1:4]), EXT_NAMES), decay = ext_opt$par[5])
+EXT_FIT_M5$fit <- ext_model_cells(EXT_FIT_M5)
+message(sprintf("  decay on km %.2f; negative log-likelihood %.2f", EXT_FIT_M5$decay, ext_opt$value))
+print(as.data.frame(EXT_FIT_M5$fit %>%
+  transmute(catchment, school = name, published_2024 = published,
+            modelled_2024 = round(expected_2024, 1))), row.names = FALSE)
+EXT_FIT_M5 <- c(EXT_FIT_M5, list(
+  schools = EXT_M5, costs = EXT_COSTS, loglik = -ext_opt$value,
+  fit_map = "pre2024", round = DEST_2024$round, source = DEST_2024$source))
+
+m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE,
+                   outside = FALSE) {
   cap <- if (is.null(pans)) pan26 else pans
-  x <- m5_table(site = site)
+  x <- m5_table(site = site, ext = TRUE)
   x$sim_flow <- m5_flows(x, W_m5, gam_m5)
   x$flow <- if (capped)
-    m5_cascade(x, cap[CITY_SCHOOLS])
+    m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP))
   else x$sim_flow
+  if (outside)
+    return(x %>% filter(name %in% EXT_NAMES) %>%
+             group_by(catchment = home, name) %>%
+             summarise(children = sum(flow), .groups = "drop"))
+  # The flow map routes city schools only.
   if (detail)
-    return(x %>% group_by(zone, name) %>%
+    return(x %>% filter(name %in% CITY_SCHOOLS) %>% group_by(zone, name) %>%
              summarise(cij = first(cij), flow = sum(flow), .groups = "drop") %>%
              left_join(zones_city %>% select(zone, Oi), by = "zone") %>%
              select(zone, name, Oi, cij, flow) %>% filter(flow > 0.05))
@@ -592,6 +709,10 @@ m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE) {
 MODELS$M5 <- list(label = "Calibrated to what each catchment asks for", args = NULL)
 runs$M5 <- m5_run()
 wanted_m5 <- m5_run(capped = FALSE) %>% select(name, wanted = modelled)
+EXT_FIT_M5$by_catchment <- m5_run(outside = TRUE)
+message(sprintf("  M5, 2026, offered a place outside the city: %s",
+                paste(sprintf("%s %.1f", EXT_FIT_M5$by_catchment$name, EXT_FIT_M5$by_catchment$children)[
+                  EXT_FIT_M5$by_catchment$children > 0.5], collapse = ", ")))
 
 # -- Relocation under M5 ----------------------------------------------------
 # The open scenario suite (03_open_scenarios.R) found moving Longhill to
@@ -621,13 +742,14 @@ CONFIGS_M5 <- list(
 YEARS_M5 <- c(2026, 2030, 2035)
 
 m5_longhill <- function(cf, year, gam = gam_m5, pops = TRUE, free = FALSE) {
-  x <- m5_table(site = cf$site, pops = pops, map = cf$map, oi = demand_m5(year))
+  x <- m5_table(site = cf$site, pops = pops, map = cf$map, oi = demand_m5(year), ext = TRUE)
   cap <- cf$pans; if (free) cap[LH] <- 9999
   x$sim_flow <- m5_flows(x, W_m5, gam)
-  x$flow <- m5_cascade(x, cap[CITY_SCHOOLS])
+  x$flow <- m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP))
   lhx <- x %>% filter(name == LH)
   tibble(intake = sum(lhx$flow), own = sum(lhx$flow[lhx$home == "Longhill"]),
          from_ds_varndean = sum(lhx$flow[lhx$home == "DS_Varndean"]),
+         left_city = sum(x$flow[x$name %in% EXT_NAMES & x$home == "Longhill"]),
          pan = unname(cf$pans[LH]))
 }
 
@@ -639,7 +761,8 @@ reloc_central <- purrr::imap_dfr(CONFIGS_M5, function(cf, id)
     tibble(config = paste0(id, ". ", cf$label), id = id, entry_year = y,
            intake = capd$intake, fill = capd$intake / capd$pan, pan = capd$pan,
            natural = nat$intake, natural_own = nat$own,
-           natural_from_ds_varndean = nat$from_ds_varndean)
+           natural_from_ds_varndean = nat$from_ds_varndean,
+           left_city_longhill = capd$left_city)
   }))
 print(as.data.frame(reloc_central %>% select(id, entry_year, natural) %>%
   mutate(natural = round(natural)) %>%
@@ -676,6 +799,7 @@ CAL <- list(
   exclusive = excl_m5, target_first_prefs = target_m5,
   cells = cells_cmp, own = own_m5, fit = fit_m5, profile = bind_rows(profile_m5),
   wanted = wanted_m5, relocation = RELOC_M5, overflow = OVERFLOW_M5,
+  outside = EXT_FIT_M5,
   beta = BETA_REF, delta = DELTA_HAT, sigma = SIGMA,
   gamma_m4 = GAMMA_HAT, fit_map = "pre2024", run_map = inp$regime,
   rounds = sort(unique(ap_m5$round)),

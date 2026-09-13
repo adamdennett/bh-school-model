@@ -21,6 +21,7 @@ steps <- c(
   "public/R/00d_route_geometries.R",     # routed worked journeys (needs r5r)
   "public/R/01b_reception_cohort.R",     # Year 7 projected from Reception offers
   "public/R/01d_adjudicator.R",          # published evidence from the determination
+  "public/R/01e_destinations_2024.R",    # where each catchment was offered places, 2024 (FOI)
   "public/R/01c_identification_test.R",  # what the preference ranks can pin down
   "public/R/02_sensitivity_envelope.R",  # sweep the remaining unknowns
   "public/R/03_open_scenarios.R",        # scenarios, with bands
