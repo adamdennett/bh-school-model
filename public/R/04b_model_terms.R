@@ -339,14 +339,24 @@ pops_m5 <- purrr::imap_dfr(split(excl_m5, excl_m5$catchment), function(e, h)
             tibble(catchment = h, pop = paste("only", e$school),
                    pop_share = e$share, excluded = rev(e$school))))
 
-m5_table <- function(site = "now", home_col = "catchment", pops = TRUE) {
+m5_table <- function(site = "now", home_col = "catchment", pops = TRUE,
+                     map = NULL, oi = NULL) {
   costs <- if (site == "elm") inp$costs_elm else inp$costs_now
+  z <- zones_city %>% select(zone, Oi, home = all_of(home_col))
+  if (!is.null(oi)) z <- z %>% select(-Oi) %>% inner_join(oi, by = "zone")
+  # A map decides which school a family is IN CATCHMENT for. The catchment
+  # term and the paired-school trait stay with where the family lives, so
+  # a redrawn map changes the entitlement without changing how strongly
+  # those families follow one. That is an assumption, and the relocation
+  # runs below report what happens when it is halved.
+  z$map_catch <- if (is.null(map)) z$home else map$catchment[match(z$zone, map$zone)]
   x <- costs %>%
     filter(name %in% CITY_SCHOOLS) %>%
-    inner_join(zones_city %>% select(zone, Oi, home = all_of(home_col)), by = "zone") %>%
+    inner_join(z, by = "zone") %>%
     filter(is.finite(cij), Oi > 0) %>%
     left_join(sch_catch, by = "name") %>%
-    mutate(in_c = as.numeric(!is.na(sch_catch) & sch_catch == home))
+    mutate(in_c = as.numeric(!is.na(sch_catch) & !is.na(map_catch) &
+                               sch_catch == map_catch))
   if (pops) {
     x <- x %>% left_join(pops_m5, by = c("home" = "catchment"),
                          relationship = "many-to-many")
@@ -465,11 +475,91 @@ MODELS$M5 <- list(label = "Calibrated to what each catchment asks for", args = N
 runs$M5 <- m5_run()
 wanted_m5 <- m5_run(capped = FALSE) %>% select(name, wanted = modelled)
 
+# -- Relocation under M5 ----------------------------------------------------
+# The open scenario suite (03_open_scenarios.R) found moving Longhill to
+# Elm Grove raised its recruitment. It ran one catchment term for the whole
+# city, at 1.2, with attractiveness that had not been balanced. M5 fits the
+# catchment term where families live, and it is strongest in exactly the
+# two places a move trades between: Longhill's own catchment, whose
+# families it moves away from, and Stringer / Varndean, whose families it
+# moves towards. So the same seven configurations are re-run here under
+# M5 - same admission numbers, same designed maps, same cohort projection.
+os_m5 <- readRDS(file.path(PUBLIC_OUT, "open_scenarios.rds"))
+DS_M5 <- "Dorothy Stringer School"
+pan_m5 <- function(lh, ds = NULL) { p <- pan26; p[LH] <- lh; if (!is.null(ds)) p[DS_M5] <- ds; p }
+demand_m5 <- function(year) {
+  tot <- inp$demand_ts %>% filter(entry_year == year, area == "Brighton & Hove") %>%
+    summarise(t = sum(state_demand)) %>% pull(t)
+  zones_city %>% transmute(zone, Oi = Oi / sum(Oi) * tot)
+}
+CONFIGS_M5 <- list(
+  A = list(label = "Today: Ovingdean, PAN 210, current catchments", site = "now", pans = pan_m5(210), map = NULL),
+  B = list(label = "Shrink only: Ovingdean, PAN 150", site = "now", pans = pan_m5(150), map = NULL),
+  C = list(label = "Move only: Elm Grove, PAN 210", site = "elm", pans = pan_m5(210), map = NULL),
+  D = list(label = "Shrink + move: Elm Grove, PAN 150", site = "elm", pans = pan_m5(150), map = NULL),
+  E = list(label = "Shrink + move + redrawn catchments", site = "elm", pans = pan_m5(150, ds = 270), map = os_m5$des_elm$assignment),
+  F = list(label = "Redrawn catchments, Longhill stays at Ovingdean", site = "now", pans = pan_m5(150, ds = 270), map = os_m5$des_now$assignment),
+  G = list(label = "Elm Grove, PAN 120, redrawn catchments", site = "elm", pans = pan_m5(120, ds = 270), map = os_m5$des_elm$assignment))
+YEARS_M5 <- c(2026, 2030, 2035)
+
+m5_longhill <- function(cf, year, gam = gam_m5, pops = TRUE, free = FALSE) {
+  x <- m5_table(site = cf$site, pops = pops, map = cf$map, oi = demand_m5(year))
+  cap <- cf$pans; if (free) cap[LH] <- 9999
+  x$sim_flow <- m5_flows(x, W_m5, gam)
+  x$flow <- ipf_capacity(x, cap[CITY_SCHOOLS], orig_col = "orig", dest_col = "name",
+                         flow_col = "sim_flow", o_col = "Oi")$sim_flow_capped
+  lhx <- x %>% filter(name == LH)
+  tibble(intake = sum(lhx$flow), own = sum(lhx$flow[lhx$home == "Longhill"]),
+         from_ds_varndean = sum(lhx$flow[lhx$home == "DS_Varndean"]),
+         pan = unname(cf$pans[LH]))
+}
+
+message("\n=== M5: the relocation configurations ===")
+reloc_central <- purrr::imap_dfr(CONFIGS_M5, function(cf, id)
+  purrr::map_dfr(YEARS_M5, function(y) {
+    capd <- m5_longhill(cf, y)
+    nat  <- m5_longhill(cf, y, free = TRUE)
+    tibble(config = paste0(id, ". ", cf$label), id = id, entry_year = y,
+           intake = capd$intake, fill = capd$intake / capd$pan, pan = capd$pan,
+           natural = nat$intake, natural_own = nat$own,
+           natural_from_ds_varndean = nat$from_ds_varndean)
+  }))
+print(as.data.frame(reloc_central %>% select(id, entry_year, natural) %>%
+  mutate(natural = round(natural)) %>%
+  tidyr::pivot_wider(names_from = entry_year, values_from = natural)), row.names = FALSE)
+
+# How much of the answer rests on the catchment terms carrying over to a
+# redrawn map at full strength, and on the paired-school trait.
+reloc_sens <- tidyr::expand_grid(id = c("A", "C", "D", "E", "G"), entry_year = YEARS_M5,
+                                 variant = c("Catchment terms halved",
+                                             "No paired-school exclusivity")) %>%
+  purrr::pmap_dfr(function(id, entry_year, variant) {
+    cf <- CONFIGS_M5[[id]]
+    r <- if (variant == "Catchment terms halved")
+      m5_longhill(cf, entry_year, gam = gam_m5 * 0.5, free = TRUE)
+    else m5_longhill(cf, entry_year, pops = FALSE, free = TRUE)
+    tibble(id, entry_year, variant, natural = r$intake)
+  })
+message("  natural recruitment, sensitivity:")
+print(as.data.frame(reloc_sens %>% mutate(natural = round(natural)) %>%
+  tidyr::pivot_wider(names_from = entry_year, values_from = natural)), row.names = FALSE)
+
+nat_of <- function(id, y) reloc_central$natural[reloc_central$id == id & reloc_central$entry_year == y]
+RELOC_M5 <- list(central = reloc_central, sens = reloc_sens,
+                 labels = purrr::map_chr(CONFIGS_M5, "label"),
+                 move_effect = tibble(entry_year = YEARS_M5,
+                                      move_only = sapply(YEARS_M5, function(y) nat_of("C", y) - nat_of("A", y)),
+                                      move_and_redraw = sapply(YEARS_M5, function(y) nat_of("E", y) - nat_of("B", y)),
+                                      redraw_only = sapply(YEARS_M5, function(y) nat_of("F", y) - nat_of("B", y))))
+message("  effect on natural recruitment:")
+print(as.data.frame(RELOC_M5$move_effect %>% mutate(across(-entry_year, round))), row.names = FALSE)
+
 CAL <- list(
   gamma = gam_m5, W = W_m5, W_wprefs = W_WPREFS[CITY_SCHOOLS],
   exclusive = excl_m5, target_first_prefs = target_m5,
   cells = cells_cmp, own = own_m5, fit = fit_m5, profile = bind_rows(profile_m5),
-  wanted = wanted_m5, beta = BETA_REF, delta = DELTA_HAT, sigma = SIGMA,
+  wanted = wanted_m5, relocation = RELOC_M5,
+  beta = BETA_REF, delta = DELTA_HAT, sigma = SIGMA,
   gamma_m4 = GAMMA_HAT, fit_map = "pre2024", run_map = inp$regime,
   rounds = sort(unique(ap_m5$round)),
   source = "BHCC evidence to the Schools Adjudicator, item 8.1 (catchment x school preferences)")

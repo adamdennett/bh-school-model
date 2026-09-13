@@ -120,6 +120,9 @@ cal_g  <- mterms$calibrated$gamma
 cal_g_lab <- c(PACA = "Portslade Aldridge", Hove_Blatch = "Hove Park / Blatchington",
                Patcham = "Patcham", DS_Varndean = "Stringer / Varndean",
                BACA = "Brighton Aldridge", Longhill = "Longhill")
+rl5 <- mterms$calibrated$relocation
+m5n <- function(id, y) round(rl5$central$natural[rl5$central$id == id & rl5$central$entry_year == y])
+m5s <- function(id, y, v) round(rl5$sens$natural[rl5$sens$id == id & rl5$sens$entry_year == y & rl5$sens$variant == v])
 
 LH   <- "Longhill High School"
 PCHS <- "Peacehaven Community School"
@@ -711,7 +714,7 @@ That is a genuinely awkward result for this document, and it is worth being expl
 
 Two things follow, and they pull in different directions.
 
-**The location finding stands.** Nothing in this run touches it: relocation raises Longhill's intake at every decay value tested, on geography alone, with no attractiveness assumption anywhere in the calculation.
+**The location finding stands.** Nothing in this run touches it: relocation raises Longhill's intake at every decay value tested, on geography alone, with no attractiveness assumption anywhere in the calculation. It is a finding about where the children are, and it is not the same as a finding that moving would fill the school: once families' attachment to their own catchment is fitted rather than assumed away, a move on its own costs Longhill more families in the east than it gains nearer the centre (@sec-relocation-m5).
 
 **But location is not the whole constraint.** Relocation and admission numbers act on the geography term. Neither acts on $W_j$, and $W_j$ is what families think of the school. A school can be moved to where the children are and still not be chosen by them — which is why @sec-choice matters as much to Longhill's future as this section does.
 
@@ -1096,7 +1099,7 @@ Two things about that comparison are worth stating before any of the scenario re
 
 **The journey times for the new site are routed, not assumed.** An earlier version of this analysis had no routed times for Elm Grove and gave it the average accessibility of a Brighton secondary. That was badly wrong in a consequential direction: rebuilding the network over a merged East and West Sussex extract, and changing nothing else, moved the relocation effect from roughly −4 children to about +58 in 2026. The site is genuinely well connected, and the approximation had been hiding it. The correction is described in full at @sec-envelope.
 
-What relocation does to Longhill's recruitment, on its own and combined with a redraw or a smaller admission number, is the subject of @sec-design-open.
+What relocation does to Longhill's recruitment, on its own and combined with a redraw or a smaller admission number, is the subject of @sec-design-open --- and, with catchment terms fitted to what families ask for, of @sec-relocation-m5, where the answer changes.
 
 # A shrinking cohort
 
@@ -1702,7 +1705,7 @@ Treat the shape of this chart as informative and the height of it as an upper bo
 :::
 
 ::: callout-important
-## Relocation helps — a correction to an earlier version
+## On the swept model, relocation helps — a correction to an earlier version
 
 At the central specification the school recruits `r cnat("A", 2035)` children in 2035 where it is, against `r cnat("C", 2035)` at Elm Grove. Across the full sweep in @sec-envelope, relocation has a median effect of **+`r round(median(env$q3$gain[env$q3$entry_year == 2035]), 1)` children by 2035**, positive in `r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs.
 
@@ -1718,10 +1721,43 @@ What other schools reducing their admission numbers would do is examined in @sec
 
 Routed costs improved the model's realism but made its fit to published offers *worse*, not better: R² falls to `r sprintf("%.2f", CalcRSquared(os$val$observed, os$val$modelled))`, and it now over-predicts Longhill by `r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])` children against `r round(os$val$observed[os$val$name == LH])` actually offered.
 
-The reason is visible in the arithmetic. Once the model can see how reachable Longhill really is, it sends far more children there than the city does. What it lacks is any measure of how strongly families *avoid* the school — something only individual preference data supplies. The open model therefore **overstates Longhill's viability**, and the relocation gain above is an upper bound rather than an estimate.
+The reason is visible in the arithmetic. Once the model can see how reachable Longhill really is, it sends far more children there than the city does. What it lacks is any measure of how strongly families *avoid* the school — something only individual preference data supplies. The open model therefore **overstates Longhill's viability**, and the relocation gain above is an upper bound rather than an estimate. @sec-relocation-m5 finds it may not be a gain at all.
 
 The direction of the correction is solid; the magnitude is not.
 :::
+
+## With catchment terms fitted to preferences, moving on its own does not help {#sec-relocation-m5}
+
+Everything above runs one catchment term for the whole city, swept around a central `r os$spec$gamma`, with attractiveness taken straight from preferences per place. For this question that is the model's most consequential simplification, because a move trades between two groups of families: those in Longhill's own catchment, whom it moves the school away from, and those near Elm Grove, most of whom live in the Stringer / Varndean catchment. Fitted to the council's catchment preference table, the catchment term is strongest in exactly those two places --- `r sprintf("%.1f", cal_g[["Longhill"]])` in Longhill and `r sprintf("%.1f", cal_g[["DS_Varndean"]])` in Stringer / Varndean, against `r sprintf("%.1f", min(cal_g))` in `r cal_g_lab[names(which.min(cal_g))]`.
+
+The same seven configurations, re-run under that model --- the strategic view's calibrated model, M5 --- with the same admission numbers, the same designed maps and the same cohort projection:
+
+```{r reloc-m5}
+rl5$central %>%
+  select(config, entry_year, natural) %>%
+  mutate(natural = round(natural)) %>%
+  pivot_wider(names_from = entry_year, values_from = natural) %>%
+  rename(Configuration = config) %>%
+  tbl(caption = "Longhill's natural recruitment under each configuration, with catchment terms fitted to preferences. Children drawn with the school's own admission number unbinding, so configurations that differ only in that number draw the same children.")
+```
+
+**Moving on its own costs Longhill about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year.** At Ovingdean it draws `r m5n("A", 2026)` children in 2026 and `r m5n("A", 2035)` in 2035; at Elm Grove behind today's catchments, `r m5n("C", 2026)` and `r m5n("C", 2035)`. The families it moves away from are the ones most attached to it, and the families it moves towards are the ones most attached to Stringer and Varndean.
+
+**Moving with redrawn catchments roughly breaks even.** Configuration E draws `r m5n("E", 2026)` in 2026 and `r m5n("E", 2035)` in 2035, against `r m5n("B", 2026)` and `r m5n("B", 2035)` for shrinking where it is. The redraw wins back what the move lost and little more. Redrawing without moving costs children too (configuration F, `r m5n("F", 2035)` in 2035), because the designed map passes some of Longhill's hinterland to its neighbours.
+
+```{r reloc-m5-sens}
+rl5$sens %>%
+  mutate(natural = round(natural), Configuration = unname(rl5$labels[id])) %>%
+  select(Configuration, Variant = variant, entry_year, natural) %>%
+  pivot_wider(names_from = entry_year, values_from = natural) %>%
+  tbl(caption = "The same, with the fitted catchment terms halved, and without the families in the paired catchments who would take only one school of the pair.")
+```
+
+**The answer turns on how strongly families follow a map, and the direction is informative.** With the catchment terms halved the site stops mattering for a move on its own --- `r m5s("A", 2030, "Catchment terms halved")` at Ovingdean against `r m5s("C", 2030, "Catchment terms halved")` at Elm Grove in 2030 --- and a move with a redraw gains. So a move looks better the less families follow their catchment and worse the more they do, and the evidence is that they follow it closely. The paired-school exclusivity barely matters here.
+
+**None of it rescues the admission number.** On no configuration does Longhill draw 150 children after 2026; by 2035 the best of them draws about `r round(max(rl5$central$natural[rl5$central$entry_year == 2035]))`.
+
+These runs share the calibrated model's standing limits: distance decay is set rather than fitted, and the catchment terms are assumed to carry over to a redrawn map at the strength families follow the map they have. Whether they would is the question that decides relocation, and nothing in published data answers it. The catchment preference table was received as a party to the adjudicator case rather than published, and identifies no one.
 
 ## Designing catchments rather than guessing them {#sec-design-open}
 
@@ -2466,12 +2502,12 @@ I would carry out that work with the council, share the code and the outputs, an
 - The 2028 boundary change does not alter this. It adds one school and its own children, and those children live closer to that school than to Longhill.
 - The 2024 catchment redraw does not alter it either, in the direction the open model can see (@sec-redraw). Whether it makes Longhill's position slightly better or slightly worse is beyond what published data can settle.
 - Demand tracks published Attainment 8, not value-added.
-- Relocating to Elm Grove increases recruitment, in `r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs by
-  2035. The direction is robust; the size is not, because the model over-predicts Longhill to begin with.
+- On the swept model, relocating to Elm Grove increases recruitment, in `r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs by
+  2035. With catchment terms fitted to preferences a move on its own does the opposite (@sec-relocation-m5), so this is listed here for what the envelope says, not as a conclusion that holds.
 
 **What this analysis cannot settle**
 
-- *How much* relocation would help. The open model over-predicts Longhill badly, so its estimate of the gain is an upper bound.
+- *Whether* relocation would help Longhill's roll at all. The swept model says it would. Fitted catchment terms say a move on its own would cost the school about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year and a move with redrawn catchments would roughly break even (@sec-relocation-m5). What decides it is how strongly families would follow a redrawn boundary, which no data here can show.
 - What happens to children academically. This models where they would go, not what happens when they get there — for which see [school_attainment_tool](https://github.com/adamdennett/school_attainment_tool), which finds absence a far more powerful lever than any redistribution of intake.
 - Anything below catchment level about who goes where.
 
@@ -2607,7 +2643,7 @@ The prediction is left as published data states it, because that is what this do
 :::
 
 1.  Longhill's natural recruitment in 2035 sits between `r round(env$q2$min[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` and `r round(env$q2$max[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` children under current catchments, centred near a median of `r round(env$q2$median[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` children.
-2.  Relocating to Elm Grove without redrawing catchments *increases* Longhill's intake, by a median of `r round(median(env$q3$gain[env$q3$entry_year == 2035]))` children a year by 2035 on this model — which, given the model's known bias towards the school, should be read as an upper bound.
+2.  Relocating to Elm Grove without redrawing catchments does **not** increase Longhill's intake. On the swept model it rises, by a median of `r round(median(env$q3$gain[env$q3$entry_year == 2035]))` children a year by 2035; with catchment terms fitted to the council's catchment preference table it falls, by about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2035]))` (@sec-relocation-m5). The second is the better evidenced, and it is the prediction made here.
 3.  The four wards joining in 2028 contribute fewer than 10 additional children a year to Longhill, under arrangements retaining a catchment priority at Peacehaven Community School.
 
 If any is wrong, the data to show it exists. We would welcome the correction.
