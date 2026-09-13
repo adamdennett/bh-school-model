@@ -14,3 +14,6 @@ _freeze/
 .Rhistory
 .RData
 rjavaenv/
+
+# The report renders next to its .qmd; the published copy is docs/index.html.
+public/*.html
