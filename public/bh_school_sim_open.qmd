@@ -1730,7 +1730,7 @@ The direction of the correction is solid; the magnitude is not.
 
 Everything above runs one catchment term for the whole city, swept around a central `r os$spec$gamma`, with attractiveness taken straight from preferences per place. For this question that is the model's most consequential simplification, because a move trades between two groups of families: those in Longhill's own catchment, whom it moves the school away from, and those near Elm Grove, most of whom live in the Stringer / Varndean catchment. Fitted to the council's catchment preference table, the catchment term is strongest in exactly those two places --- `r sprintf("%.1f", cal_g[["Longhill"]])` in Longhill and `r sprintf("%.1f", cal_g[["DS_Varndean"]])` in Stringer / Varndean, against `r sprintf("%.1f", min(cal_g))` in `r cal_g_lab[names(which.min(cal_g))]`.
 
-The same seven configurations, re-run under that model --- the strategic view's calibrated model, M5 --- with the same admission numbers, the same designed maps and the same cohort projection:
+The same seven configurations, re-run under that model --- the strategic view's calibrated model, M5 --- with the same admission numbers, the same designed maps and the same cohort projection. One thing does differ from the runs above: a child refused at a full school is re-offered a place the way a second preference would be --- at the other school of a paired catchment first, then in proportion to where the family's catchment puts its second preferences, and only at schools with room --- rather than in proportion to first preferences:
 
 ```{r reloc-m5}
 rl5$central %>%

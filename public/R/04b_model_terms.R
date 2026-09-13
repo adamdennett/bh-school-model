@@ -453,13 +453,131 @@ print(as.data.frame(own_m5 %>% mutate(across(-home, ~ sprintf("%.0f%%", 100 * .x
       row.names = FALSE)
 
 # -- The capped run, on the map in force -----------------------------------
+# -- Where refused children go ----------------------------------------------
+# M5's capacity step. The same code runs in the strategic view's app
+# (app/R/model.R), which is checked against these runs to 0.00 children.
+#' Where refused children go
+#'
+#' A proportional ceiling cuts every applicant to a full school back by
+#' the same share and then scales each neighbourhood's flows back up to
+#' place all its children - which spreads a refused child across every
+#' other school in proportion to how much they wanted it first. That is
+#' not what happens. A child refused at Varndean who would take Stringer
+#' gets Stringer, and a child refused at Cardinal Newman goes where
+#' families like them put their second preference.
+#'
+#' So refused demand is re-offered in two steps, only ever to schools with
+#' room:
+#'
+#'   1  PARTNER FIRST. In the two paired catchments, a family who would
+#'      take either school and is refused at one goes to the other.
+#'   2  SECOND PREFERENCES. Everything else is shared among schools with
+#'      room in proportion to the second preferences the family's home
+#'      catchment gives each school (the council's catchment preference
+#'      table), modulated by how near this neighbourhood is to each
+#'      school compared with its catchment as a whole.
+#'
+#' Re-offered demand can overfill a school with little room; the next
+#' round cuts it back and re-offers the excess. If no school has room at
+#' all, the refused children stay unplaced rather than being forced over
+#' an admission number.
+#'
+#' The kernel and the partner map are traits of where a family lives, so
+#' they follow the neighbourhood's own catchment under any map.
+overflow_setup <- function(flow, orig, name, home, pop, kern, partner) {
+  oid <- match(orig, unique(orig))
+  u <- flow / rowsum(flow, oid)[oid, 1]
+  u[!is.finite(u)] <- 0
+  hs <- paste(home, name)
+  ubar <- stats::ave(u, hs, FUN = mean)
+  k <- unname(kern[hs]); k[is.na(k)] <- 0
+  bw <- k * u / pmax(ubar, 1e-12)
+  bw[!is.finite(bw)] <- 0
+  p_name <- unname(partner[hs])
+  pr <- pop == "either" & !is.na(p_name)
+  p_idx <- rep(NA_integer_, length(flow))
+  p_idx[pr] <- match(paste(orig[pr], p_name[pr]), paste(orig, name))
+  pr <- pr & !is.na(p_idx)
+  list(oid = oid, u = u, bw = bw, pr = pr, p_idx = p_idx)
+}
+
+overflow_room <- function(held_rows, name, cap) {
+  held <- tapply(held_rows, name, sum)
+  unname((held < cap[names(held)] - 1e-6)[name])
+}
+
+overflow_add <- function(refused, room, st) {
+  add <- numeric(length(refused))
+  to_p <- st$pr
+  to_p[st$pr] <- room[st$p_idx[st$pr]]
+  if (any(to_p)) {
+    pa <- rowsum(refused[to_p], st$p_idx[to_p])
+    idx <- as.integer(rownames(pa))
+    add[idx] <- add[idx] + pa[, 1]
+  }
+  rest <- refused
+  rest[to_p] <- 0
+  R <- rowsum(rest, st$oid)[, 1]
+  w <- st$bw * room
+  ws <- rowsum(w, st$oid)[st$oid, 1]
+  w2 <- st$u * room
+  ws2 <- rowsum(w2, st$oid)[st$oid, 1]
+  share <- ifelse(ws > 0, w / ws, ifelse(ws2 > 0, w2 / ws2, 0))
+  add + unname(R[st$oid]) * share
+}
+
+cascade_cap <- function(flow, orig, name, home, pop, kern, partner, cap,
+                        max_iter = 500, tol = 1e-6) {
+  st <- overflow_setup(flow, orig, name, home, pop, kern, partner)
+  D <- flow
+  for (i in seq_len(max_iter)) {
+    load <- tapply(D, name, sum)
+    g <- pmin(cap[names(load)] / load, 1)
+    g[!is.finite(g)] <- 1
+    H <- D * unname(g[name])
+    refused <- D - H
+    if (sum(refused) <= tol) { D <- H; break }
+    room <- overflow_room(H, name, cap)
+    if (!any(room)) { D <- H; break }
+    D <- H + overflow_add(refused, room, st)
+  }
+  attr(D, "iterations") <- i
+  D
+}
+
+partner_map <- function(ex) {
+  out <- character(0)
+  if (is.null(ex) || !nrow(ex)) return(out)
+  for (h in unique(ex$catchment)) {
+    s <- ex$school[ex$catchment == h]
+    if (length(s) == 2) out <- c(out, stats::setNames(rev(s), paste(h, s)))
+  }
+  out
+}
+
+# Second preferences by home catchment and school, pooled over the
+# matrix's three rounds, as shares of each catchment's second preferences.
+OVERFLOW_M5 <- ap_m5 %>%
+  filter(school %in% CITY_SCHOOLS) %>%
+  mutate(home = unname(AREA_M5[area])) %>%
+  group_by(home, school) %>%
+  summarise(pref2 = sum(pref2), .groups = "drop") %>%
+  group_by(home) %>% mutate(share = pref2 / sum(pref2)) %>% ungroup() %>%
+  transmute(catchment = home, school, pref2, share)
+KERN_M5 <- with(OVERFLOW_M5, setNames(share, paste(catchment, school)))
+PARTNER_M5 <- partner_map(excl_m5)
+stopifnot(length(PARTNER_M5) == 4)
+
+m5_cascade <- function(x, cap)
+  as.numeric(cascade_cap(x$sim_flow, x$orig, x$name, x$home, x$pop,
+                         KERN_M5, PARTNER_M5, cap))
+
 m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE) {
   cap <- if (is.null(pans)) pan26 else pans
   x <- m5_table(site = site)
   x$sim_flow <- m5_flows(x, W_m5, gam_m5)
   x$flow <- if (capped)
-    ipf_capacity(x, cap[CITY_SCHOOLS], orig_col = "orig", dest_col = "name",
-                 flow_col = "sim_flow", o_col = "Oi")$sim_flow_capped
+    m5_cascade(x, cap[CITY_SCHOOLS])
   else x$sim_flow
   if (detail)
     return(x %>% group_by(zone, name) %>%
@@ -506,8 +624,7 @@ m5_longhill <- function(cf, year, gam = gam_m5, pops = TRUE, free = FALSE) {
   x <- m5_table(site = cf$site, pops = pops, map = cf$map, oi = demand_m5(year))
   cap <- cf$pans; if (free) cap[LH] <- 9999
   x$sim_flow <- m5_flows(x, W_m5, gam)
-  x$flow <- ipf_capacity(x, cap[CITY_SCHOOLS], orig_col = "orig", dest_col = "name",
-                         flow_col = "sim_flow", o_col = "Oi")$sim_flow_capped
+  x$flow <- m5_cascade(x, cap[CITY_SCHOOLS])
   lhx <- x %>% filter(name == LH)
   tibble(intake = sum(lhx$flow), own = sum(lhx$flow[lhx$home == "Longhill"]),
          from_ds_varndean = sum(lhx$flow[lhx$home == "DS_Varndean"]),
@@ -558,7 +675,7 @@ CAL <- list(
   gamma = gam_m5, W = W_m5, W_wprefs = W_WPREFS[CITY_SCHOOLS],
   exclusive = excl_m5, target_first_prefs = target_m5,
   cells = cells_cmp, own = own_m5, fit = fit_m5, profile = bind_rows(profile_m5),
-  wanted = wanted_m5, relocation = RELOC_M5,
+  wanted = wanted_m5, relocation = RELOC_M5, overflow = OVERFLOW_M5,
   beta = BETA_REF, delta = DELTA_HAT, sigma = SIGMA,
   gamma_m4 = GAMMA_HAT, fit_map = "pre2024", run_map = inp$regime,
   rounds = sort(unique(ap_m5$round)),
