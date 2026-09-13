@@ -22,7 +22,10 @@
 #                                         not in every family's choice set
 #   M3  + catchment term                  gamma * in_catchment
 #   M4  + competing destinations          delta * log(C_j), Fotheringham
-#   M5  + capacity ceiling                schools cannot exceed their PAN
+#   M5  calibrated to what each catchment asks for: a catchment term per
+#       catchment, W balanced to first preferences, and the families in
+#       the two paired catchments who would accept only one of the pair,
+#       all fitted to the council's catchment x school preference matrix
 #
 # gamma and delta are fitted here, on ten destination margins. That is a
 # weak basis and the fitted values should not be quoted as estimates -
@@ -30,7 +33,8 @@
 # sequence CAN say is which terms move the model towards the observed
 # offers and which do not, and that is what it is used for.
 #
-# Inputs : public/output/open_inputs.rds, factsheet_panel.rds
+# Inputs : public/output/open_inputs.rds, factsheet_panel.rds,
+#          adjudicator_preferences.rds (09, which therefore runs first)
 # Outputs: public/output/model_terms.rds
 # ======================================================================
 
@@ -244,6 +248,235 @@ faith_variant <- run_model(w_spec = "W_wprefs", capped = TRUE,
 
 runs <- purrr::imap(MODELS, function(m, id) do.call(run_model, m$args))
 
+# ---- M5: calibrated to what each catchment asks for -------------------
+#
+# gamma above is fitted to OFFERS, and from M2 onwards offers are the one
+# thing the model is told: most of them are admission numbers. So gamma
+# was asked what is left once the ceiling has done its work, and the
+# answer was "not much". That is a different question from how strongly
+# families follow their catchment, and the answer to that one is in the
+# council's own catchment-level preference matrix: for each catchment and
+# each of three rounds, how many first, second and third preferences its
+# children gave each school. It says four in five first preferences from
+# the Stringer/Varndean catchment go to those two schools, where M4 sends
+# three in five of that catchment's demand there.
+#
+# M5 fits three things to the matrix, all on UNCAPPED demand - what
+# families ask for - and then puts the ceiling on top exactly as before:
+#
+#   gamma_h  a catchment term for each of the six catchments, by
+#            multinomial deviance of the first preferences each
+#            catchment's children gave each school
+#   W_j      re-balanced so the model's demand for each school reproduces
+#            its share of the city's first preferences
+#   e_hj     in the two paired catchments, the share of children who would
+#            accept only one school of the pair. A child who names
+#            Varndean and not Stringer and is refused at Varndean does not
+#            fall back on Stringer; M4 assumes every child does.
+#
+# The fit uses the catchment map the preferences were made under
+# (pre-2024); the runs use the map in force, like every other rung. beta,
+# sigma and delta stay where the ladder put them.
+
+M5_ROUNDS_FILE <- file.path(PUBLIC_OUT, "adjudicator_preferences.rds")
+if (!file.exists(M5_ROUNDS_FILE))
+  stop("M5 needs adjudicator_preferences.rds: run 09_adjudicator_preferences.R first")
+ap_m5 <- readRDS(M5_ROUNDS_FILE)$prefs
+AREA_M5 <- c("CA-A" = "PACA", "CA-B" = "Hove_Blatch", "CA-C" = "Patcham",
+             "CA-D" = "DS_Varndean", "CA-E" = "BACA", "CA-F" = "Longhill")
+CATCH_M5 <- unname(AREA_M5)
+PAIRS_M5 <- inp$catchment_schools[lengths(inp$catchment_schools) == 2]
+
+# -- What the matrix says ------------------------------------------------
+obs_cells <- ap_m5 %>%
+  filter(school %in% CITY_SCHOOLS) %>%
+  mutate(home = unname(AREA_M5[area])) %>%
+  group_by(home, school) %>%
+  summarise(pref1 = sum(pref1), .groups = "drop") %>%
+  group_by(home) %>% mutate(obs_share = pref1 / sum(pref1)) %>% ungroup()
+target_m5 <- obs_cells %>% group_by(school) %>%
+  summarise(p = sum(pref1), .groups = "drop") %>% mutate(p = p / sum(p))
+target_m5 <- setNames(target_m5$p, target_m5$school)
+
+# Named at any rank, pooled over the three rounds. The matrix counts how
+# many children named each school, not who named both, so the share who
+# would accept only one of a pair is bounded rather than observed. The
+# hard bounds come from the counts alone. The default sits midway between
+# the most overlap the counts allow and what independent naming would
+# give: families treat a pair as substitutes, so real overlap is above
+# independence, and the default is not taken to either end.
+named <- ap_m5 %>%
+  mutate(home = unname(AREA_M5[area])) %>%
+  group_by(home, school) %>%
+  summarise(named = sum(pref1 + pref2 + pref3), .groups = "drop")
+children <- ap_m5 %>% filter(school == "Grand Total") %>%
+  mutate(home = unname(AREA_M5[area])) %>%
+  group_by(home) %>% summarise(N = sum(pref1), .groups = "drop")
+
+excl_m5 <- purrr::imap_dfr(PAIRS_M5, function(sch, h) {
+  N <- children$N[children$home == h]
+  n <- setNames(named$named[named$home == h & named$school %in% sch],
+                named$school[named$home == h & named$school %in% sch])[sch]
+  both_max <- min(n); both_ind <- prod(n) / N; both_min <- max(0, sum(n) - N)
+  both <- (both_max + both_ind) / 2
+  tibble(catchment = h, school = sch, children = N, named = unname(n),
+         share = unname((n - both) / N),
+         share_lo = unname((n - both_max) / N),
+         share_hi = unname((n - both_min) / N),
+         share_independent = unname((n - both_ind) / N))
+})
+stopifnot(all(excl_m5$share >= excl_m5$share_lo - 1e-9),
+          all(excl_m5$share <= excl_m5$share_hi + 1e-9))
+message("\n=== M5: children in the paired catchments who would accept only one of the pair ===")
+print(as.data.frame(excl_m5 %>% transmute(catchment, school = sub(" School$", "", school),
+  named, children, `share (default)` = sprintf("%.1f%%", 100 * share),
+  bounds = sprintf("%.1f%%-%.1f%%", 100 * share_lo, 100 * share_hi))), row.names = FALSE)
+
+# -- A fast uncapped model -------------------------------------------------
+pops_m5 <- purrr::imap_dfr(split(excl_m5, excl_m5$catchment), function(e, h)
+  bind_rows(tibble(catchment = h, pop = "either", pop_share = 1 - sum(e$share),
+                   excluded = NA_character_),
+            tibble(catchment = h, pop = paste("only", e$school),
+                   pop_share = e$share, excluded = rev(e$school))))
+
+m5_table <- function(site = "now", home_col = "catchment", pops = TRUE) {
+  costs <- if (site == "elm") inp$costs_elm else inp$costs_now
+  x <- costs %>%
+    filter(name %in% CITY_SCHOOLS) %>%
+    inner_join(zones_city %>% select(zone, Oi, home = all_of(home_col)), by = "zone") %>%
+    filter(is.finite(cij), Oi > 0) %>%
+    left_join(sch_catch, by = "name") %>%
+    mutate(in_c = as.numeric(!is.na(sch_catch) & sch_catch == home))
+  if (pops) {
+    x <- x %>% left_join(pops_m5, by = c("home" = "catchment"),
+                         relationship = "many-to-many")
+  } else {
+    x$pop <- NA_character_; x$pop_share <- NA_real_; x$excluded <- NA_character_
+  }
+  x %>% mutate(pop = coalesce(pop, "either"), pop_share = coalesce(pop_share, 1)) %>%
+    filter(is.na(excluded) | name != excluded) %>%
+    mutate(orig = paste(zone, pop, sep = "#"), Oi = Oi * pop_share,
+           orig_id = match(orig, unique(orig)))
+}
+
+m5_flows <- function(x, W, gam) {
+  cj <- with(compete(W), setNames(C_j, name))
+  g <- unname(gam[x$home]); g[is.na(g)] <- 0
+  u <- W[x$name] * x$cij^(-BETA_REF) * exp(g * x$in_c) * cj[x$name]^DELTA_HAT
+  u[!is.finite(u)] <- 0
+  den <- rowsum(u, x$orig_id, reorder = FALSE)[, 1]
+  as.numeric(x$Oi * u / den[x$orig_id])
+}
+
+m5_balance <- function(x, gam, W = W_WPREFS[CITY_SCHOOLS], iters = 200) {
+  for (i in seq_len(iters)) {
+    s <- tapply(m5_flows(x, W, gam), x$name, sum)
+    s <- s / sum(s)
+    W[names(s)] <- W[names(s)] * (target_m5[names(s)] / s)^0.8
+    if (max(abs(s - target_m5[names(s)])) < 1e-6) break
+  }
+  W / mean(W)
+}
+
+m5_cells <- function(x, W, gam) {
+  f <- m5_flows(x, W, gam)
+  tibble(home = x$home, school = x$name, f = f) %>%
+    group_by(home, school) %>% summarise(n = sum(f), .groups = "drop") %>%
+    group_by(home) %>% mutate(model_share = n / sum(n)) %>% ungroup() %>%
+    right_join(obs_cells, by = c("home", "school")) %>%
+    mutate(model_share = coalesce(model_share, 0))
+}
+m5_deviance <- function(cells)
+  2 * sum(ifelse(cells$pref1 > 0,
+                 cells$pref1 * log(cells$obs_share / pmax(cells$model_share, 1e-9)), 0))
+
+# -- Fit gamma per catchment ---------------------------------------------
+message("\n=== M5: fitting a catchment term for each catchment ===")
+x_fit <- m5_table(home_col = "catch_pre2024")
+GRID_M5 <- seq(0, 4, by = 0.1)
+gam_m5 <- setNames(rep(1.5, length(CATCH_M5)), CATCH_M5)
+W_m5 <- m5_balance(x_fit, gam_m5)
+profile_m5 <- list()
+for (sweep in 1:3) {
+  moved <- FALSE
+  for (h in CATCH_M5) {
+    dev <- vapply(GRID_M5, function(v) {
+      g <- gam_m5; g[h] <- v
+      m5_deviance(m5_cells(x_fit, m5_balance(x_fit, g, W_m5, iters = 60), g))
+    }, numeric(1))
+    best_v <- GRID_M5[which.min(dev)]
+    if (abs(best_v - gam_m5[h]) > 1e-9) moved <- TRUE
+    gam_m5[h] <- best_v
+    W_m5 <- m5_balance(x_fit, gam_m5, W_m5)
+    profile_m5[[h]] <- tibble(catchment = h, gamma = GRID_M5, deviance = dev)
+  }
+  message(sprintf("  sweep %d: %s", sweep,
+                  paste(sprintf("%s %.1f", names(gam_m5), gam_m5), collapse = ", ")))
+  if (!moved) break
+}
+at_edge <- names(gam_m5)[gam_m5 %in% range(GRID_M5)]
+if (length(at_edge))
+  warning("M5 catchment term pinned at the edge of its grid for: ",
+          paste(at_edge, collapse = ", "), call. = FALSE)
+W_m5 <- m5_balance(x_fit, gam_m5, W_m5)
+
+cells_m5 <- m5_cells(x_fit, W_m5, gam_m5)
+x_fit_m4 <- m5_table(home_col = "catch_pre2024", pops = FALSE)
+cells_m4 <- m5_cells(x_fit_m4, W_WPREFS[CITY_SCHOOLS],
+                     setNames(rep(GAMMA_HAT, length(CATCH_M5)), CATCH_M5))
+cells_cmp <- cells_m4 %>% select(home, school, pref1, obs_share, m4_share = model_share) %>%
+  left_join(cells_m5 %>% select(home, school, m5_share = model_share),
+            by = c("home", "school"))
+own_m5 <- cells_cmp %>%
+  filter(unname(setNames(sch_catch$sch_catch, sch_catch$name)[school]) == home) %>%
+  group_by(home) %>%
+  summarise(observed = sum(obs_share), M4 = sum(m4_share), M5 = sum(m5_share),
+            .groups = "drop")
+fit_m5 <- tibble(model = c("M4", "M5"),
+                 deviance = c(m5_deviance(cells_m4), m5_deviance(cells_m5)),
+                 cell_rmse_pp = c(sqrt(mean((100 * (cells_cmp$obs_share - cells_cmp$m4_share))^2)),
+                                  sqrt(mean((100 * (cells_cmp$obs_share - cells_cmp$m5_share))^2))))
+message("  fit to the catchment preference matrix:")
+print(as.data.frame(fit_m5 %>% mutate(across(-model, ~ round(.x, 2)))), row.names = FALSE)
+message("  share of each catchment's first preferences going to its own school(s):")
+print(as.data.frame(own_m5 %>% mutate(across(-home, ~ sprintf("%.0f%%", 100 * .x)))),
+      row.names = FALSE)
+
+# -- The capped run, on the map in force -----------------------------------
+m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE) {
+  cap <- if (is.null(pans)) pan26 else pans
+  x <- m5_table(site = site)
+  x$sim_flow <- m5_flows(x, W_m5, gam_m5)
+  x$flow <- if (capped)
+    ipf_capacity(x, cap[CITY_SCHOOLS], orig_col = "orig", dest_col = "name",
+                 flow_col = "sim_flow", o_col = "Oi")$sim_flow_capped
+  else x$sim_flow
+  if (detail)
+    return(x %>% group_by(zone, name) %>%
+             summarise(cij = first(cij), flow = sum(flow), .groups = "drop") %>%
+             left_join(zones_city %>% select(zone, Oi), by = "zone") %>%
+             select(zone, name, Oi, cij, flow) %>% filter(flow > 0.05))
+  x %>% group_by(name) %>% summarise(modelled = sum(flow), .groups = "drop") %>%
+    inner_join(observed, by = "name") %>%
+    mutate(resid = modelled - observed)
+}
+
+MODELS$M5 <- list(label = "Calibrated to what each catchment asks for", args = NULL)
+runs$M5 <- m5_run()
+wanted_m5 <- m5_run(capped = FALSE) %>% select(name, wanted = modelled)
+
+CAL <- list(
+  gamma = gam_m5, W = W_m5, W_wprefs = W_WPREFS[CITY_SCHOOLS],
+  exclusive = excl_m5, target_first_prefs = target_m5,
+  cells = cells_cmp, own = own_m5, fit = fit_m5, profile = bind_rows(profile_m5),
+  wanted = wanted_m5, beta = BETA_REF, delta = DELTA_HAT, sigma = SIGMA,
+  gamma_m4 = GAMMA_HAT, fit_map = "pre2024", run_map = inp$regime,
+  rounds = sort(unique(ap_m5$round)),
+  source = "BHCC evidence to the Schools Adjudicator, item 8.1 (catchment x school preferences)")
+message(sprintf("  M5 intakes: %s",
+                paste(sprintf("%s %.0f", sub(" (School|High School|Community Academy|Catholic School)$", "", runs$M5$name),
+                              runs$M5$modelled), collapse = ", ")))
+
 ladder <- purrr::imap_dfr(runs, function(x, id)
   cbind(tibble(model = id, label = MODELS[[id]]$label), score(x)))
 
@@ -312,7 +545,10 @@ print(as.data.frame(pair_split %>%
 
 # ---- Full school-level table for the best model ---------------------
 
-best_id <- ladder$model[which.min(ladder$rmse)]
+# The full model is M5, named rather than picked by fit to offers. It is
+# fitted to preferences, not offers, so the offers table is not the test
+# it was built to pass - and it is the model the app and the flow map run.
+best_id <- "M5"
 message(sprintf("\n=== School-level fit, %s (%s) ===", best_id,
                 MODELS[[best_id]]$label))
 print(as.data.frame(runs[[best_id]] %>%
@@ -363,8 +599,9 @@ print(as.data.frame(elm_cmp %>%
 # The origin-destination flows behind each rung, and behind both
 # relocation scenarios, for 04c to draw and for the catchment design.
 od_flows <- bind_rows(
-  purrr::imap_dfr(MODELS, function(m, id)
+  purrr::imap_dfr(MODELS[names(MODELS) != "M5"], function(m, id)
     do.call(run_model, c(m$args, list(detail = TRUE))) %>% mutate(model = id)),
+  m5_run(detail = TRUE) %>% mutate(model = "M5"),
   purrr::imap_dfr(setNames(as.list(ELM_PANS), names(elm_runs)), function(p, id)
     run_model(w_spec = "W_wprefs", capped = TRUE, site = "elm",
               pans = pan_elm_of(p), detail = TRUE) %>% mutate(model = id)),
@@ -398,6 +635,7 @@ saveRDS(list(
   elm_runs    = elm_runs, elm_pans = ELM_PANS, elm_compare = elm_cmp,
   beta        = BETA_REF, sigma = SIGMA,
   best        = best_id,
+  calibrated  = CAL,
   run_at      = Sys.time()
 ), file.path(PUBLIC_OUT, "model_terms.rds"))
 

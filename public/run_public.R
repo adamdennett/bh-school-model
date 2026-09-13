@@ -25,13 +25,13 @@ steps <- c(
   "public/R/02_sensitivity_envelope.R",  # sweep the remaining unknowns
   "public/R/03_open_scenarios.R",        # scenarios, with bands
   "public/R/04_brightopia.R",            # the distance-only model
+  "public/R/09_adjudicator_preferences.R",# catchment-level preference matrix (04b needs it)
   "public/R/04b_model_terms.R",          # which terms the model actually needs
   "public/R/04c_flow_map.R",             # modelled flows routed on the network
   "public/R/05_pan_scenarios_open.R",    # admission-number scenarios
   "public/R/06_fsm_criterion_open.R",    # the FSM priority, from published sources
   "public/R/07_deprivation_open.R",      # IDACI and catchment deprivation
   "public/R/08_catchment_design_open.R", # designed catchments, open inputs
-  "public/R/09_adjudicator_preferences.R",# catchment-level preference matrix
   "public/R/10_adjudicator_conversion.R"  # first-preference success by school
 )
 

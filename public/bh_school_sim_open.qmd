@@ -115,6 +115,11 @@ bright <- readRDS(file.path(PUBLIC_OUT, "brightopia.rds"))
 rec    <- readRDS(file.path(PUBLIC_OUT, "reception_cohort.rds"))
 adj    <- readRDS(file.path(PUBLIC_OUT, "adjudicator.rds"))
 dep    <- readRDS(file.path(PUBLIC_OUT, "deprivation_open.rds"))
+mterms <- readRDS(file.path(PUBLIC_OUT, "model_terms.rds"))
+cal_g  <- mterms$calibrated$gamma
+cal_g_lab <- c(PACA = "Portslade Aldridge", Hove_Blatch = "Hove Park / Blatchington",
+               Patcham = "Patcham", DS_Varndean = "Stringer / Varndean",
+               BACA = "Brighton Aldridge", Longhill = "Longhill")
 
 LH   <- "Longhill High School"
 PCHS <- "Peacehaven Community School"
@@ -322,6 +327,8 @@ The model here carries an explicit **catchment priority parameter**, $\gamma$, w
 The calibrated model has no such term. It does not need one, and that is worth understanding rather than passing over. With individual records you can fit a **destination fixed effect** for every school — a single number absorbing everything that makes a school more or less chosen, whatever the cause: reputation, buildings, sixth form, siblings, catchment, or whatever else is operating. The catchment effect is then not assumed at all. It is measured, by comparing what happens to families inside and outside a catchment who named the same school.
 
 So $\gamma$ here is a **stand-in for a measurement**, not a rival theory of how admissions work. That has two consequences worth carrying through the rest of this document. It is why catchment priority appears as a swept band rather than a number. And it is why the sweep can be misleading: a single $\gamma$ applied city-wide forces catchment priority to be worth the same at every school, when the evidence in @sec-rules-open suggests it is worth a great deal at an oversubscribed school and close to nothing at an undersubscribed one. The variance decomposition in @sec-envelope shows $\gamma$ accounting for under 3% of the variation in the answer, which is reassuring — but that is partly because a parameter forced to be uniform cannot express the effect that actually matters.
+
+**One source changes this for catchment strength, though not for distance.** The council's catchment-level preference table in its evidence to the Schools Adjudicator (item 8.1, used in @sec-rules-open) records how many first, second and third preferences each catchment's children gave each school. That is a flow matrix, at catchment rather than neighbourhood level, and it is enough to fit a catchment term for each catchment. The strategic view does so in its calibrated model: from `r sprintf("%.1f", min(cal_g))` in `r cal_g_lab[names(which.min(cal_g))]` to `r sprintf("%.1f", max(cal_g))` in `r cal_g_lab[names(which.max(cal_g))]`. Most of those sit inside the sweep used here; `r if (max(cal_g) > max(env$gammas)) paste0(cal_g_lab[names(which.max(cal_g))], " is above its top end of ", max(env$gammas), ", so for that catchment the sweep understates how strongly families follow the map.") else "all of them do."`
 :::
 
 **A note on notation.** $c_{ij}$ is the generalised *cost* of travel from $i$ to $j$, measured in minutes of walk and bus journey time routed over the real network — not a straight-line distance. The symbol is held to that meaning throughout. The one place a true distance appears is the competing-destinations term in @sec-brightopia, where $d_{jk}$ is the straight-line separation between two *schools* in kilometres; that is a different quantity and keeps a different symbol.
@@ -720,6 +727,8 @@ A spatial interaction model has two parameters that decide everything it says: *
 Published data gives school totals, not flows. There is no open way to estimate either parameter, so this document does not try. Instead it **sweeps** both across their full plausible range and reports which conclusions hold everywhere in that range and which depend on where in it the truth lies (@sec-envelope). That is an honest response to the limitation, and it is why several findings here are stated as ranges rather than numbers.
 
 **With admissions records this becomes a half-day's work.** A Poisson regression of flows on log distance and a catchment indicator, with origin fixed effects, returns both parameters with standard errors. There is good reason to expect the distance decay to come out stable across specifications and years. If it does, the wide bands in this report are not irreducible uncertainty about Brighton at all — only uncertainty about what the records would say.
+
+**Catchment strength is a partial exception.** The council's catchment-level preference table (item 8.1 of its evidence to the Schools Adjudicator, @sec-rules-open) is a flow matrix at catchment level, and fitting to it gives a catchment term for each of the six catchments, from `r sprintf("%.1f", min(cal_g))` to `r sprintf("%.1f", max(cal_g))`. The strategic view's calibrated model uses those values. Distance decay is not identified by a catchment-level table: that still needs flows between neighbourhoods and schools.
 
 The gain is not academic. Every figure in this report that carries a range would carry a number instead.
 :::
