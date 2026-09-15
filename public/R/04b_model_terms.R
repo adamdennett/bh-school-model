@@ -80,11 +80,19 @@ message(sprintf("  Fitting against the %d offers made in the %d round",
 sch_xy <- inp$schools %>% filter(name %in% CITY_SCHOOLS) %>%
   select(name, easting, northing)
 
-compete <- function(w = NULL) {
-  tidyr::expand_grid(name = sch_xy$name, k = sch_xy$name) %>%
+# Measured from where the schools stand in the run: with Longhill at Elm
+# Grove, its distances to its rivals are from Elm Grove.
+compete <- function(w = NULL, site = "now") {
+  xy <- sch_xy
+  if (site == "elm") {
+    lh <- xy$name == "Longhill High School"
+    xy$easting[lh] <- ELM_GROVE$easting
+    xy$northing[lh] <- ELM_GROVE$northing
+  }
+  tidyr::expand_grid(name = xy$name, k = xy$name) %>%
     filter(name != k) %>%
-    left_join(sch_xy, by = "name") %>%
-    left_join(sch_xy %>% rename(k = name, ke = easting, kn = northing), by = "k") %>%
+    left_join(xy, by = "name") %>%
+    left_join(xy %>% rename(k = name, ke = easting, kn = northing), by = "k") %>%
     mutate(d_km = pmax(euclid_m(easting, northing, ke, kn) / 1000, 0.1),
            Wk   = if (is.null(w)) 1 else unname(w[k])) %>%
     group_by(name) %>%
@@ -377,8 +385,8 @@ m5_table <- function(site = "now", home_col = "catchment", pops = TRUE,
 # and the catchment terms and attractiveness are fitted without them.
 EXT_FIT_M5 <- NULL
 
-m5_flows <- function(x, W, gam, outside = EXT_FIT_M5) {
-  cj <- with(compete(W), setNames(C_j, name))
+m5_flows <- function(x, W, gam, outside = EXT_FIT_M5, site = "now") {
+  cj <- with(compete(W, site), setNames(C_j, name))
   g <- unname(gam[x$home]); g[is.na(g)] <- 0
   u <- W[x$name] * x$cij^(-BETA_REF) * exp(g * x$in_c) * cj[x$name]^DELTA_HAT
   u[!is.finite(u)] <- 0
@@ -498,12 +506,19 @@ print(as.data.frame(own_m5 %>% mutate(across(-home, ~ sprintf("%.0f%%", 100 * .x
 #'
 #' The kernel and the partner map are traits of where a family lives, so
 #' they follow the neighbourhood's own catchment under any map.
-overflow_setup <- function(flow, orig, name, home, pop, kern, partner) {
+#'
+#' When a school has moved, `ref` is the flow each row would have with
+#' every school where it stands today. The kernel records the second
+#' preferences families gave with the schools there, so each
+#' neighbourhood's weight is its pull at this site against its
+#' catchment's pull at today's: a catchment the move brings a school
+#' nearer to sends it more of its overflow. With no move nothing changes.
+overflow_setup <- function(flow, orig, name, home, pop, kern, partner, ref = NULL) {
   oid <- match(orig, unique(orig))
-  u <- flow / rowsum(flow, oid)[oid, 1]
-  u[!is.finite(u)] <- 0
+  shares <- function(f) { v <- f / rowsum(f, oid)[oid, 1]; v[!is.finite(v)] <- 0; v }
+  u <- shares(flow)
   hs <- paste(home, name)
-  ubar <- stats::ave(u, hs, FUN = mean)
+  ubar <- stats::ave(if (is.null(ref)) u else shares(ref), hs, FUN = mean)
   k <- unname(kern[hs]); k[is.na(k)] <- 0
   bw <- k * u / pmax(ubar, 1e-12)
   bw[!is.finite(bw)] <- 0
@@ -541,8 +556,8 @@ overflow_add <- function(refused, room, st) {
 }
 
 cascade_cap <- function(flow, orig, name, home, pop, kern, partner, cap,
-                        max_iter = 500, tol = 1e-6) {
-  st <- overflow_setup(flow, orig, name, home, pop, kern, partner)
+                        max_iter = 500, tol = 1e-6, ref = NULL) {
+  st <- overflow_setup(flow, orig, name, home, pop, kern, partner, ref)
   D <- flow
   for (i in seq_len(max_iter)) {
     load <- tapply(D, name, sum)
@@ -582,9 +597,20 @@ KERN_M5 <- with(OVERFLOW_M5, setNames(share, paste(catchment, school)))
 PARTNER_M5 <- partner_map(excl_m5)
 stopifnot(length(PARTNER_M5) == 4)
 
-m5_cascade <- function(x, cap)
+m5_cascade <- function(x, cap, ref = NULL)
   as.numeric(cascade_cap(x$sim_flow, x$orig, x$name, x$home, x$pop,
-                         KERN_M5, PARTNER_M5, cap))
+                         KERN_M5, PARTNER_M5, cap, ref = ref))
+
+# The same demand with every school where it stands today, on the same
+# map, for a run where Longhill has moved: what the second preferences in
+# the kernel were given against.
+m5_ref <- function(x, W, gam, map = NULL, oi = NULL, pops = TRUE) {
+  xr <- m5_table(site = "now", pops = pops, map = map, oi = oi, ext = TRUE)
+  f <- m5_flows(xr, W, gam, site = "now")
+  out <- f[match(paste(x$orig, x$name), paste(xr$orig, xr$name))]
+  out[is.na(out)] <- x$sim_flow[is.na(out)]
+  out
+}
 
 # -- Schools outside the city ------------------------------------------------
 # Everything above sends every child to one of the ten city schools. Some
@@ -687,9 +713,10 @@ m5_run <- function(site = "now", pans = NULL, capped = TRUE, detail = FALSE,
                    outside = FALSE) {
   cap <- if (is.null(pans)) pan26 else pans
   x <- m5_table(site = site, ext = TRUE)
-  x$sim_flow <- m5_flows(x, W_m5, gam_m5)
+  x$sim_flow <- m5_flows(x, W_m5, gam_m5, site = site)
   x$flow <- if (capped)
-    m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP))
+    m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP),
+               ref = if (site != "now") m5_ref(x, W_m5, gam_m5))
   else x$sim_flow
   if (outside)
     return(x %>% filter(name %in% EXT_NAMES) %>%
@@ -744,8 +771,10 @@ YEARS_M5 <- c(2026, 2030, 2035)
 m5_longhill <- function(cf, year, gam = gam_m5, pops = TRUE, free = FALSE) {
   x <- m5_table(site = cf$site, pops = pops, map = cf$map, oi = demand_m5(year), ext = TRUE)
   cap <- cf$pans; if (free) cap[LH] <- 9999
-  x$sim_flow <- m5_flows(x, W_m5, gam)
-  x$flow <- m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP))
+  x$sim_flow <- m5_flows(x, W_m5, gam, site = cf$site)
+  x$flow <- m5_cascade(x, c(cap[CITY_SCHOOLS], EXT_CAP),
+                       ref = if (cf$site != "now")
+                         m5_ref(x, W_m5, gam, map = cf$map, oi = demand_m5(year), pops = pops))
   lhx <- x %>% filter(name == LH)
   tibble(intake = sum(lhx$flow), own = sum(lhx$flow[lhx$home == "Longhill"]),
          from_ds_varndean = sum(lhx$flow[lhx$home == "DS_Varndean"]),

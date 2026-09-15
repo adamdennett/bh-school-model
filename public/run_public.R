@@ -34,7 +34,11 @@ steps <- c(
   "public/R/06_fsm_criterion_open.R",    # the FSM priority, from published sources
   "public/R/07_deprivation_open.R",      # IDACI and catchment deprivation
   "public/R/08_catchment_design_open.R", # designed catchments, open inputs
-  "public/R/10_adjudicator_conversion.R"  # first-preference success by school
+  "public/R/10_adjudicator_conversion.R", # first-preference success by school
+  # Needs bh-school-system rebuilt from this bundle first (its
+  # R/01_assemble.R and R/05_app_inputs.R), because it runs the simulator's
+  # model on the simulator's inputs.
+  "public/R/11_simulator_results.R"      # the full model as the simulator runs it
 )
 
 t0 <- Sys.time()

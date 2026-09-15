@@ -124,6 +124,15 @@ rl5 <- mterms$calibrated$relocation
 m5n <- function(id, y) round(rl5$central$natural[rl5$central$id == id & rl5$central$entry_year == y])
 m5s <- function(id, y, v) round(rl5$sens$natural[rl5$sens$id == id & rl5$sens$entry_year == y & rl5$sens$variant == v])
 
+# The full model as the policy simulator runs it: M5 with the council's
+# 2026/27 priorities, second-preference overflow, the East Sussex schools,
+# finances and a disadvantaged-pupil measure (public/R/11_simulator_results.R).
+sr   <- readRDS(file.path(PUBLIC_OUT, "simulator_results.rds"))
+sco  <- function(id, col, y = 2030) sr$options$runs[[col]][sr$options$runs$id == id & sr$options$runs$year == y]
+spn  <- function(sc, col = "longhill", y = 2026) sr$pan_scenarios[[col]][sr$pan_scenarios$scenario == sc & sr$pan_scenarios$entry_year == y]
+swh  <- function(id, col, y = 2026) sr$options$whitehawk_elm[[col]][sr$options$whitehawk_elm$id == id & sr$options$whitehawk_elm$year == y]
+gbpm <- function(x) sprintf("%s£%.1fm", ifelse(x < 0, "−", ""), abs(x) / 1e6)
+
 LH   <- "Longhill High School"
 PCHS <- "Peacehaven Community School"
 
@@ -165,28 +174,40 @@ cnat <- function(id, y) round(os$natural$natural[grepl(paste0("^", id, "\\."), o
 
 No pupil-level records were used. Every input is published by a public body or reproducible from published sources using the code in this repository, and the build enforces that at runtime. Sources are listed in full in @sec-sources.
 
-The model has parameters that only individual-level admissions data could pin down precisely. Rather than assume values for them, this analysis sweeps them across their full plausible range and reports how often each conclusion holds. Where a finding survives the whole range, no restricted data is needed to state it — and where one does not, that is reported too.
+The model has parameters that only individual-level admissions data could pin down precisely. This report was first built on a **swept** model, which runs them across their full plausible range and reports how often each conclusion holds. Its scenario results now come from the **full model** (M5), which fits a catchment term for each catchment and each school's attractiveness to the council's catchment-level preference table, and runs as the [policy simulator](`r sr$simulator_app`) runs it: with the council's 2026/27 admission priorities, children refused at a full school re-offered by second preference, and the schools outside the city that children leave for. The swept model is kept as a sensitivity check and for what it can say without any fitting (@sec-envelope). The [strategic view](`r sr$strategic_view`) sets the same results against the council's priorities.
 :::
 
 # Executive summary {#sec-exec}
 
 Brighton & Hove has signalled through recent admissions consultations that there is an impending crisis related to pupil numbers and school viability. School admission numbers, catchment boundaries, free school meal priority and the spatial distribution of school provision relative to pupil home locations are all factors that play into the strategic planning of provision in the city. This report models the city's secondary system as a whole in order to ask what scenarios are more or less conducive to a well-functioning system of schools in the city. It is not clear that these scenarios are being discussed elsewhere in the council - they certainly are not being held in public forums.
 
+::: callout-note
+## What has changed in this version
+
+The scenario results now come from the **full model**, M5, as the [policy simulator](`r sr$simulator_app`) runs it: catchment terms and school attractiveness fitted to the council's catchment-level preference table, the council's 2026/27 admission priorities, children refused at a full school re-offered by second preference, and the schools outside the city that children leave for. The swept model this report was first built on is kept as a sensitivity check. Three corrections are carried through. The section on other schools reducing their admission numbers has been rebuilt and its earlier table withdrawn (@sec-pan-open). The relocation runs now measure competition from the Elm Grove site and let second preferences follow the move. And disadvantage in school intakes is counted on a measure fitted to the council's Year 7 free school meal offers rather than inferred from neighbourhoods. The [strategic view](`r sr$strategic_view`) weighs the same results against the council's priorities.
+:::
+
 ## The situation
 
-**The Year 7 cohort is falling, and not evenly.** Surplus capacity has to appear somewhere, and the schools it appears at are not the ones with the most room to absorb it. Decisions taken in the next two admissions rounds will compound across fifteen to twenty years.
+**The Year 7 cohort is falling, and not evenly.** Brighton & Hove's falls from about `r fmt(dem("Brighton & Hove", 2026))` children in 2026 to `r fmt(dem("Brighton & Hove", 2035))` in 2035. Surplus capacity has to appear somewhere, and the schools it appears at are not the ones with the most room to absorb it. Decisions taken in the next two admissions rounds will compound across fifteen to twenty years.
+
+**Longhill takes about `r fmt(sco("today", "lh_intake", 2026))` children in 2026 and `r fmt(sco("today", "lh_intake"))` in 2030** on the full model, against an admission number of 210, and is about `r gbpm(-sco("today", "lh_gap"))` a year short of break-even by 2030.
 
 **The city already runs two admissions systems under one set of rules.** In the council's own admissions guide, five schools carry the line *All preferences allocated unless offered a higher preference*. Three publish a breakdown by criterion, because for them the criteria decide something. **At the first group the admission criteria are inert**: catchment, siblings and the tiebreaker allocate nothing, because nobody is turned away.
 
-## What follows for the policies under discussion
+## What the full model says about the options
 
-**A catchment redraw cannot help an undersubscribed school by admitting more children, because it is not refusing any.** It can only work by changing which school families *name*. That is a slower and much weaker mechanism, and the evidence on the 2024 redraw does not obviously support it: families moved out of Longhill's catchment appear to have gone on naming it, and families moved in were not obviously converted.
+**Cutting Longhill's admission number removes empty places; it does not add children.** At 150 it takes exactly the children it takes at 210, and no option tested makes it break even.
 
-**Viability and social mix pull the same levers in opposite directions.** Every measure that would make an eastern school more viable — a redraw capturing more local families, a smaller admission number matched to local demand, retaining children who currently leave — works by binding the school more tightly to a deprived neighbourhood, and therefore concentrates disadvantage in its intake. Open allocation, the FSM criterion and the 2024 redraw all loosen that binding, spread disadvantage, and cost the eastern school. **A council can pursue a more socially mixed system, or strongly viable schools in its most deprived areas. The evidence does not show it can straightforwardly have both.**
+**Other schools taking fewer helps Longhill only where those schools are full.** Cardinal Newman at 270 and King's at 150 add `r fmt(sco("cn270_kings", "lh_intake", 2026) - sco("today", "lh_intake", 2026))` children to Longhill in 2026 and `r fmt(sco("cn270_kings", "lh_intake") - sco("today", "lh_intake"))` in 2030. Trimming Stringer, Varndean and Blatchington Mill adds `r fmt(sco("central", "lh_intake", 2026) - sco("today", "lh_intake", 2026))` in 2026 and nothing by 2030. Brighton Aldridge taking fewer adds nothing (@sec-pan-open).
+
+**Moving Longhill on its own does not help it; moving it with a catchment map drawn round the new site does.** A smaller Longhill, at 150 places at the top of Elm Grove, takes `r fmt(sco("elm", "lh_intake", 2026))` children in 2026 and `r fmt(sco("elm", "lh_intake"))` in 2030. Children from the most deprived neighbourhoods stop travelling further than everyone else --- `r sprintf("%.1f", sco("today", "dep_gap"))` extra minutes today --- and the new map puts `r sr$options$elm_moves$whitehawk_to_longhill` of the `r sr$options$elm_moves$whitehawk_zones` Whitehawk neighbourhoods moved out of Longhill's catchment in 2024 back into it (@sec-options-m5).
+
+**Returning Whitehawk to Longhill's catchment without a move** adds `r fmt(sco("whitehawk", "lh_intake") - sco("today", "lh_intake"))` children by 2030 and lowers displacement, but does little for Whitehawk's journeys, and its effect on how mixed intakes are is too small for the model to call (@sec-whitehawk-open).
+
+**Viability and social mix pull the same levers in opposite directions.** The move that does most for access in the east concentrates disadvantage: the segregation index across the city's intakes rises from `r sprintf("%.3f", sco("today", "gorard"))` to `r sprintf("%.3f", sco("elm", "gorard"))`. Open allocation, the FSM criterion and the 2024 redraw all loosen the binding between neighbourhood and school, spread disadvantage, and cost the eastern school. **A council can pursue a more socially mixed system, or strongly viable and accessible schools in its most deprived areas. The evidence does not show it can straightforwardly have both.**
 
 **The City Child route around that trade-off was tested against public opinion and rejected.** That outcome is evidence, not an obstacle. The preference for a local school is not a Brighton peculiarity: distance decay of the strength found here appears in every spatial interaction model of school choice, in every kind of city, over seventy years. A policy premised on families not holding that preference is premised on something no evidence base supports.
-
-**No single instrument is sufficient, and they behave very differently over time.** Reducing other schools' admission numbers produces a gain to Longhill that is largest in the first year and fades as the cohort shrinks. Retaining children who currently leave the city is smaller at first and more durable. Moving the school and redrawing its catchment are worth little separately and considerably more together. **The instruments compose; none substitutes for the others, and the ones that look strongest in the first year are not the ones that still work in the tenth.** How large each is cannot be settled from published data, which is what recommendation 1 is about.
 
 ## What is driving the sorting
 
@@ -200,24 +221,24 @@ Brighton & Hove has signalled through recent admissions consultations that there
 
 ## What the council should do
 
-1.  **Do not set Longhill's admission number without calibrating this analysis on the council's own records.** The question is not a fine judgement between adjacent options; it is whether the school supports three forms of entry or five, and published data cannot distinguish those. The work is a day's analysis on records the admissions process already produces.
+1.  **Lead with a smaller Longhill at the top of Elm Grove, with the catchments redrawn round it, and test and cost it properly.** On the full model it does most for access for disadvantaged children and most for Longhill's roll, and the map it needs settles the Whitehawk question as part of a redesign. The costs belong in the same paper: the site, which is not modelled here; a more concentrated intake; longer journeys for Rottingdean, Saltdean and Woodingdean; and a school that still does not break even.
 
-2.  **Publish the evidence base.** Nine aggregate tables, none disclosive, most a single query, set out at @sec-data-requests. Publishing them alongside the allocation factsheets each March would let every party to these debates argue from the same evidence, and would cost a day of officer time a year.
+2.  **If the site cannot be had, return Whitehawk to Longhill's catchment on its own**, and trim the full central schools only alongside it and only while they are full.
 
-3.  **Publish an intake-adjusted attainment measure in the admissions guide**, alongside the raw one, with a sentence explaining what a headline grade mostly reflects. The guide already tables roll, preferences and admission numbers for every school. This is a column, not a new document, and it is the only lever identified anywhere in this report that acts on demand rather than shuffling supply.
+3.  **Set Longhill's admission number at 150 and plan its budget and staffing for the children it will get**, not for 150. Put the gap to break-even to members as the cost of keeping a school in the east.
 
-4.  **Stop treating catchment priority as an instrument where it is inert.** At five of the city's schools it allocates nothing. Any proposal resting on a redraw should say explicitly whether it expects to work through priority, which it cannot at those schools, or through preference, which is slower, weaker and largely untested.
+4.  **Ask Cardinal Newman, King's and Brighton Aldridge to take fewer**, and every school in the city to share the fall in proportion. The council cannot set their numbers; @sec-pan-open is the evidence for asking.
 
-5.  **State which goal is being pursued when the two conflict**, and be honest that pursuing it costs something measurable on the other. A consultation presenting a redraw as good for disadvantaged children *and* good for an eastern school is describing a trade-off as though it were a win.
+5.  **Publish an intake-adjusted attainment measure in the admissions guide**, alongside the raw one, with a sentence explaining what a headline grade mostly reflects. The guide already tables roll, preferences and admission numbers for every school. This is a column, not a new document, and it is the only lever identified anywhere in this report that acts on demand rather than shuffling supply.
 
-6.  **Model the whole system before changing one part of it.** Every result here says the decisions are not separable: reducing one school's admission number pushes demand onto its neighbours and concentrates it, unevenly, on the school least able to absorb it. At present each change is consulted on separately, and nothing in that process would reveal whether they add up.
+6.  **Publish the evidence base.** Nine aggregate tables, none disclosive, most a single query, set out at @sec-data-requests. Publishing them alongside the allocation factsheets each March would let every party to these debates argue from the same evidence, and would cost a day of officer time a year.
+
+7.  **State which goal is being pursued when the two conflict.** Relocation shortens disadvantaged children's journeys and concentrates them in one school. The council's work on inequalities should say which it values, and find out from its own records whether shorter journeys raise attendance.
 
 ::: callout-note
 ## How confident to be in each of these
 
-The findings above are not equally certain, and the report says so wherever they appear. Broadly: **the demographic arithmetic and the two-systems finding rest on the council's own published documents and are not in doubt.** The choice findings rest on published attainment and preference data and are firm. **The figures for how large each policy effect would be are the least certain**, because the model's key parameters cannot be estimated from published data, which is what recommendation 1 is about.
-
-Where this report and a record-calibrated model would diverge, the open figures are almost always the more optimistic about Longhill.
+The findings above are not equally certain, and the report says so wherever they appear. **The demographic arithmetic and the two-systems finding rest on the council's own published documents and are not in doubt.** The choice findings rest on published attainment and preference data and are firm. **The option results are the least certain.** They come from a model fitted to the council's catchment-level preferences rather than to individual applications; distance decay is set rather than fitted; and every redraw and relocation result assumes families follow a new map as closely as the one they have. The direction of each finding is more reliable than its size.
 :::
 
 # What this is
@@ -229,6 +250,7 @@ This document builds that model from published data, and uses it to ask three qu
 1.  **What are Brighton families responding to** when they choose a school?
 2.  **Can Longhill High School be sustained** at its current site and size — and does relocating it to the top of Elm Grove change that?
 3.  **What does the 2028 boundary expansion do**, when Brighton & Hove takes in East Saltdean, Telscombe and Peacehaven?
+4.  **What do the options in front of the council do together** --- Longhill's size and site, the catchment map, and other schools' admission numbers --- on a model fitted to what each catchment's families ask for?
 
 ## Where the data came from {#sec-data-provenance}
 
@@ -857,9 +879,23 @@ os$val %>%
 
 The fit is moderate (R² = `r sprintf("%.2f", CalcRSquared(os$val$observed, os$val$modelled))`), and one error dominates it: **the model over-predicts Longhill by `r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])` children**, against `r round(os$val$observed[os$val$name == LH])` actually offered.
 
-That is worth dwelling on, because it is the central limitation of an open-data model of school choice. The model knows where Longhill is, how big it is, and how long it takes to reach — and on those facts it should recruit well. What it cannot see is that Brighton families do not want it. Only individual-level preference data measures that, and it is not published.
+That is worth dwelling on, because it is the central limitation of an open-data model of school choice built on published margins alone. The model knows where Longhill is, how big it is, and how long it takes to reach — and on those facts it should recruit well. What it cannot see is that Brighton families do not want it.
 
-**Every figure below is therefore generous to Longhill.** Where the model says the school struggles to fill, the real position is worse; where it says relocation helps, the true gain is smaller.
+**The swept model's figures are therefore generous to Longhill**, and that is why this report's scenario results no longer rest on it.
+
+### The full model
+
+The full model, M5 (@sec-relocation-m5), closes most of that gap without any pupil-level data. The council's catchment-level preference table records which schools each catchment's children name, so it can fit how strongly each catchment follows its own map and balance each school's attractiveness to the first preferences it actually receives. Families' avoidance of a school is then in the model rather than missing from it.
+
+```{r validation-m5}
+mterms$runs$M5 %>%
+  transmute(School = name, Published = round(observed), `Full model` = round(modelled),
+            Difference = round(modelled - observed)) %>%
+  arrange(desc(abs(Difference))) %>%
+  tbl(caption = "The full model against the council's published offers, the same round")
+```
+
+It puts Longhill at `r round(mterms$runs$M5$modelled[mterms$runs$M5$name == LH])` against `r round(mterms$runs$M5$observed[mterms$runs$M5$name == LH])` offered (R² = `r sprintf("%.2f", CalcRSquared(mterms$runs$M5$observed, mterms$runs$M5$modelled))`). Distance decay is still set rather than fitted, because a catchment-level table cannot identify it; that is the gap the council's records would close.
 
 # Reading the admissions rules instead of inferring them {#sec-rules-open}
 
@@ -1042,11 +1078,30 @@ tibble::tribble(
 **The net gain to catchment applicants is small at two of the three schools.** Blatchington Mill and Dorothy Stringer each free about twenty FSM places and give sixteen back to the new priority 6 — a net five or six children, well inside the year-to-year noise. **Varndean is the exception**, because it was carrying by far the heaviest FSM allocation in the city at 29% of its PAN against 14 to 15% elsewhere. It gains around two dozen catchment places.
 
 ::: callout-note
-## The 30% cap will not bind anywhere
+## The 30% cap binds at Varndean now, and should stop binding after the narrowing
 
-The arrangements set out a careful worked calculation for capping FSM places at a city average of 30% of PAN. After the narrowing, FSM allocations at Blatchington Mill and Dorothy Stringer fall to roughly **8% of PAN**, and Varndean to about **16%**.
+The arrangements set out a careful worked calculation for capping FSM places at a city average of 30% of PAN. The first two rounds under the priority show where it bites. The council's allocation factsheets give the FSM places available at each community school and how many were offered:
 
-The cap is therefore inert. What limits FSM admissions under the new arrangements is the size of the eligible pool, not the ceiling the council has written above it — and a reader of the arrangements would not guess that from the prominence the calculation is given.
+```{r fsm-rounds}
+tibble::tribble(
+  ~School,             ~pan25, ~avail25, ~p45_25, ~pan26, ~avail26, ~p45_26, ~fsm26, ~offers26,
+  "Blatchington Mill",   330,      99,      47,     330,      99,      59,     74,       330,
+  "Dorothy Stringer",    330,      99,      49,     330,      99,      66,     84,       330,
+  "Hove Park",           180,      54,      31,     180,      54,      37,     48,       136,
+  "Longhill",            270,      81,      14,     210,      63,      28,     40,        81,
+  "Patcham",             225,      68,      24,     225,      68,      35,     55,       204,
+  "Varndean",            300,      90,      88,     300,      90,      66,     90,       300) %>%
+  transmute(School,
+            `2025: FSM places / offered under 4 and 5` = sprintf("%d / %d", avail25, p45_25),
+            `2026: FSM places / offered under 4 and 5` = sprintf("%d / %d", avail26, p45_26),
+            `2026: all FSM offers, any priority` = fsm26,
+            `2026: share of all offers` = sprintf("%.0f%%", 100 * fsm26 / offers26)) %>%
+  tbl(caption = "Free school meal places at the community schools in the first two rounds under the priority. Offers on national offer day. Source: Brighton & Hove City Council, Year 7 allocation factsheets, September 2025 and September 2026.")
+```
+
+**At Varndean the cap binds.** In 2025, 88 of its 90 FSM places were taken under priorities 4 and 5; in 2026 all 90, counting the FSM children admitted under the earlier priorities. Everywhere else the places went unused. And the table shows something no catchment statistic does: **almost half of Longhill's 2026 offers, and over a third of Hove Park's, went to children eligible for free school meals.**
+
+After the narrowing to Targeted FSM, allocations at Blatchington Mill and Dorothy Stringer would fall to roughly **8% of PAN**, and Varndean's to about **16%**, so the cap should stop binding there too. What limits FSM admissions under the new arrangements is then the size of the eligible pool, not the ceiling.
 :::
 
 ::: callout-important
@@ -1054,7 +1109,7 @@ The cap is therefore inert. What limits FSM admissions under the new arrangement
 
 The new 5% reserve is the most consequential part of the change, and it replaces a deprivation-based route to the popular schools with a **geographic** one.
 
-Across the six community schools it amounts to roughly **79 places city-wide**. It is aimed precisely at the four catchments where a family has no choice of school within their own area — which is a defensible thing to target, and a different thing from what the FSM criterion targeted.
+Across the six community schools it amounts to roughly **79 places city-wide**; in its first round, September 2026, 68 of the 80 reserved places were offered, and only one of them at Longhill. It is aimed precisely at the four catchments where a family has no choice of school within their own area — which is a defensible thing to target, and a different thing from what the FSM criterion targeted.
 
 **The direction of travel is toward viability and away from social mix**, which is the trade-off @sec-catchment-intake-gap sets out. Narrowing the FSM priority tightens the binding between neighbourhood and school: an eastern child who would have reached Varndean under the old out-of-catchment FSM route now falls to priority 8 there, and is more likely to be allocated their catchment school. That helps the eastern schools' rolls and concentrates disadvantage in their intakes. Priority 6 offsets part of it, but 79 places is a fraction of what the FSM route was moving.
 
@@ -1099,7 +1154,7 @@ Two things about that comparison are worth stating before any of the scenario re
 
 **The journey times for the new site are routed, not assumed.** An earlier version of this analysis had no routed times for Elm Grove and gave it the average accessibility of a Brighton secondary. That was badly wrong in a consequential direction: rebuilding the network over a merged East and West Sussex extract, and changing nothing else, moved the relocation effect from roughly −4 children to about +58 in 2026. The site is genuinely well connected, and the approximation had been hiding it. The correction is described in full at @sec-envelope.
 
-What relocation does to Longhill's recruitment, on its own and combined with a redraw or a smaller admission number, is the subject of @sec-design-open --- and, with catchment terms fitted to what families ask for, of @sec-relocation-m5, where the answer changes.
+What relocation does to Longhill's recruitment, on its own and combined with a redraw or a smaller admission number, is the subject of @sec-relocation-m5 and @sec-options-m5, on the full model, and of @sec-design-open. **On the full model a move on its own does not help Longhill; a move with a catchment map drawn round the new site does**, and it closes the gap between disadvantaged children's journeys and everyone else's --- while concentrating them in one school.
 
 # A shrinking cohort
 
@@ -1487,6 +1542,31 @@ os$size_fin %>%
 
 This is not unique to Longhill. Across `r fmt(sum(os$size_fin$n))` school-years of English secondary finance returns, schools under 500 pupils run a deficit `r round(os$size_fin$pct_deficit[os$size_fin$size_band == "<500"])`% of the time against about `r round(median(os$size_fin$pct_deficit[os$size_fin$size_band != "<500"]))`% for everyone else — despite receiving more per pupil. A secondary school staffs a maths, science and languages department whether its year group is 90 or 240.
 
+## On the full model {#sec-fill-m5}
+
+The question this section asks --- how full would Longhill be at each admission number --- no longer needs the sweep that follows. The full model, fitted to what each catchment's families ask for and run with the council's 2026/27 priorities, gives the fill rate directly.
+
+```{r fill-m5}
+#| fig-cap: "Longhill's fill rate at each admission number on the full model, with the council's 2026/27 priorities, at its current site and catchments. Same admission-number ladder and colour scale as the swept figure below."
+
+sr$fill_ladder %>%
+  filter(entry_year %in% c(2026, 2028, 2030, 2032, 2035)) %>%
+  mutate(lab = paste0(round(100 * pmin(fill, 1)), "%")) %>%
+  ggplot(aes(factor(entry_year), factor(pan, levels = rev(sort(unique(pan)))),
+             fill = pmin(fill, 1.05))) +
+  geom_tile(colour = "white", linewidth = 1.2) +
+  geom_text(aes(label = lab), size = 3.4) +
+  scale_fill_gradient2(low = "#d73027", mid = "#fee08b", high = "#1a9850",
+                       midpoint = 0.72, limits = c(0.25, 1.05), guide = "none") +
+  labs(title = "Longhill's fill rate at each admission number, full model",
+       subtitle = "Current site, option Z catchments, council priorities",
+       x = "Year 7 entry year", y = "Published Admission Number")
+```
+
+**Longhill takes the same children at every admission number from 120 upwards**: about `r fmt(sr$fill_ladder$intake[sr$fill_ladder$pan == 210 & sr$fill_ladder$entry_year == 2026])` in 2026, `r fmt(sr$fill_ladder$intake[sr$fill_ladder$pan == 210 & sr$fill_ladder$entry_year == 2030])` in 2030 and `r fmt(sr$fill_ladder$intake[sr$fill_ladder$pan == 210 & sr$fill_ladder$entry_year == 2035])` in 2035. A lower number changes how full the school looks, not how many children come. At 150 it is `r sprintf("%.0f%%", 100 * sr$fill_ladder$fill[sr$fill_ladder$pan == 150 & sr$fill_ladder$entry_year == 2030])` full in 2030; at 120, `r sprintf("%.0f%%", 100 * sr$fill_ladder$fill[sr$fill_ladder$pan == 120 & sr$fill_ladder$entry_year == 2030])`.
+
+The swept figures below are kept for what they show about the range of assumptions published data cannot rule out. The full model sits at the bottom of that range.
+
 ## What size of school does the demand support?
 
 ::: callout-note
@@ -1593,9 +1673,9 @@ This is the central result, and it does not depend on any assumption the reader 
 
 The first figure above is now built to match the calibrated analysis exactly — same quantity, same admission-number ladder, same colour scale — so the two can be laid side by side. Doing that shows the gap plainly rather than leaving it to be inferred from two different metrics.
 
-**What a fill rate would look like instead can be bounded rather than asserted.** @sec-envelope shows this model recruiting roughly twice what the lower end of its own sweep suggests. Carry that through and a PAN of 150 in 2035 could plausibly fill somewhere in the high fifties rather than reaching its number in nine runs out of ten; a PAN of 120 might sit in the low seventies. If the true fill rates are anywhere near that, **the conclusion this section invites — that 120 to 150 is sustainable — does not follow.** A school at 57% of a 150 PAN is not a viable school; it is a smaller version of the same problem.
+**The full model now gives the fill rate directly** (@sec-fill-m5). At 150 places Longhill fills to `r sprintf("%.0f%%", 100 * sr$fill_ladder$fill[sr$fill_ladder$pan == 150 & sr$fill_ladder$entry_year == 2030])` in 2030 and `r sprintf("%.0f%%", 100 * sr$fill_ladder$fill[sr$fill_ladder$pan == 150 & sr$fill_ladder$entry_year == 2035])` in 2035; at 120, `r sprintf("%.0f%%", 100 * sr$fill_ladder$fill[sr$fill_ladder$pan == 120 & sr$fill_ladder$entry_year == 2035])` in 2035. **The conclusion this section invites — that 120 to 150 is sustainable — does not follow.** A school at that fill is not a viable school at those numbers; it is a smaller version of the same problem, and its budget should be planned for the children it will get.
 
-The alternative is that the open model is closer to right and the school genuinely does support five forms of entry. Nothing in published data distinguishes those two futures, and they imply completely different decisions.
+That is the lower of the two futures the swept model could not choose between, and the one fitted to what each catchment's families ask for.
 
 **Recommendation: this analysis should be re-run on the council's admissions records before any decision is taken on Longhill's admission number.** The question in front of the council is not a fine judgement between adjacent options. It is whether a school supports three forms of entry or five, and this document cannot answer it — not because the method is inadequate, but because the one input that would settle it is held by the authority and not published.
 
@@ -1755,7 +1835,7 @@ rl5$central %>%
 
 **Moving on its own costs Longhill about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year.** At Ovingdean it draws `r m5n("A", 2026)` children in 2026 and `r m5n("A", 2035)` in 2035; at Elm Grove behind today's catchments, `r m5n("C", 2026)` and `r m5n("C", 2035)`. The families it moves away from are the ones most attached to it, and the families it moves towards are the ones most attached to Stringer and Varndean.
 
-**Moving with redrawn catchments gains a few children.** Configuration E draws `r m5n("E", 2026)` in 2026 and `r m5n("E", 2035)` in 2035, against `r m5n("B", 2026)` and `r m5n("B", 2035)` for shrinking where it is --- about `r round(rl5$move_effect$move_and_redraw[rl5$move_effect$entry_year == 2030])` a year. The redraw wins back what the move lost, and a little more; fewer of Longhill's catchment leave the city under it, `r round(rl5$central$left_city_longhill[rl5$central$id == "E" & rl5$central$entry_year == 2030])` in 2030 against `r round(rl5$central$left_city_longhill[rl5$central$id == "B" & rl5$central$entry_year == 2030])` shrinking in place. Redrawing without moving costs children too (configuration F, `r m5n("F", 2035)` in 2035), because the designed map passes some of Longhill's hinterland to its neighbours.
+**Moving with redrawn catchments gains children.** Configuration E draws `r m5n("E", 2026)` in 2026 and `r m5n("E", 2035)` in 2035, against `r m5n("B", 2026)` and `r m5n("B", 2035)` for shrinking where it is --- about `r round(rl5$move_effect$move_and_redraw[rl5$move_effect$entry_year == 2030])` a year. The redraw wins back what the move lost, and a little more; fewer of Longhill's catchment leave the city under it, `r round(rl5$central$left_city_longhill[rl5$central$id == "E" & rl5$central$entry_year == 2030])` in 2030 against `r round(rl5$central$left_city_longhill[rl5$central$id == "B" & rl5$central$entry_year == 2030])` shrinking in place. Redrawing without moving costs children too (configuration F, `r m5n("F", 2035)` in 2035), because the designed map passes some of Longhill's hinterland to its neighbours.
 
 ```{r reloc-m5-sens}
 rl5$sens %>%
@@ -1772,6 +1852,41 @@ rl5$sens %>%
 **None of it rescues the admission number.** On no configuration does Longhill draw 150 children after 2026; by 2035 the best of them draws about `r round(max(rl5$central$natural[rl5$central$entry_year == 2035]))`.
 
 These runs share the calibrated model's standing limits: distance decay is set rather than fitted, and the catchment terms are assumed to carry over to a redrawn map at the strength families follow the map they have. Whether they would is the question that decides relocation, and nothing in published data answers it. The catchment preference table was received as a party to the adjudicator case rather than published, and identifies no one.
+
+## With the council's priorities, and a map drawn round the new site {#sec-options-m5}
+
+The configurations above count what Longhill would draw with no admission priorities and its own number unbinding. The simulator runs the same model as the council actually allocates: the 2026/27 priorities, children refused elsewhere re-offered by second preference, the East Sussex schools as destinations, and --- for the move --- a catchment map drawn round Longhill at the top of Elm Grove.
+
+```{r options-m5}
+show_o <- c(today = "Today", lh150 = "Longhill cut to 150",
+            whitehawk = "Whitehawk back in Longhill's catchment",
+            elm = "Longhill at Elm Grove at 150, catchments redrawn",
+            package_f = "Elm Grove at 150, redrawn; Cardinal Newman 300, King's 150, Brighton Aldridge 150",
+            close_lh = "Longhill closed")
+sr$options$runs %>%
+  filter(year == 2030, id %in% names(show_o)) %>%
+  mutate(id = factor(id, names(show_o))) %>% arrange(id) %>%
+  transmute(Option = unname(show_o[as.character(id)]),
+            Longhill = ifelse(is.na(lh_intake), "---", fmt(lh_intake)),
+            `Deprived children's extra journey` = sprintf("%.1f min", ifelse(abs(dep_gap) < 0.05, 0, dep_gap)),
+            `Segregation index` = sprintf("%.3f", gorard),
+            Displaced = fmt(displaced),
+            `Left the city` = fmt(left_city),
+            `Longhill's balance` = ifelse(is.na(lh_gap), "---", gbpm(lh_gap))) %>%
+  tbl(caption = "The options in 2030 on the full model with the council's priorities. Deprived children are those in the three most deprived IDACI deciles; the segregation index counts disadvantaged pupils on a measure fitted to the council's Year 7 free school meal offers. Longhill's balance is its steady-state annual balance.")
+```
+
+**A smaller Longhill at the top of Elm Grove, with a map drawn round it, takes `r fmt(sco("elm", "lh_intake", 2026))` children in 2026 and `r fmt(sco("elm", "lh_intake"))` in 2030**, against `r fmt(sco("today", "lh_intake", 2026))` and `r fmt(sco("today", "lh_intake"))` where it is. Cutting its number to 150 without moving adds nothing. With Cardinal Newman, King's and Brighton Aldridge taking fewer as well, the moved school takes `r fmt(sco("package_f", "lh_intake"))` in 2030.
+
+**It closes the access gap.** Children from the most deprived neighbourhoods travel `r sprintf("%.1f", sco("today", "dep_gap"))` minutes further than everyone else today and no further with the move. Whitehawk's disadvantaged children's journeys fall from `r sprintf("%.0f", swh("today", "minutes_disadvantaged"))` to `r sprintf("%.0f", swh("elm", "minutes_disadvantaged"))` minutes, and the new map puts `r sr$options$elm_moves$whitehawk_to_longhill` of the `r sr$options$elm_moves$whitehawk_zones` Whitehawk neighbourhoods back in Longhill's catchment (@sec-whitehawk-open).
+
+**It costs something on every other measure.** The segregation index rises from `r sprintf("%.3f", sco("today", "gorard"))` to `r sprintf("%.3f", sco("elm", "gorard"))`, because a school placed among deprived neighbourhoods recruits from them. `r fmt(sr$options$elm_moves$children)` children a year live in neighbourhoods that change catchment. More children leave the city --- `r fmt(sco("elm", "left_city"))` in 2030 against `r fmt(sco("today", "left_city"))` --- because Rottingdean, Saltdean and Woodingdean are now further from their school. And Longhill still runs short of break-even, by `r gbpm(-sco("elm", "lh_gap"))` a year in 2030. The site itself, and what building on it would cost, are not modelled.
+
+::: callout-note
+## Two corrections to the relocation runs in this version
+
+Earlier versions measured the competition between schools from Longhill's Ovingdean site even when it had moved, and re-offered children refused elsewhere using second preferences given with Longhill at Ovingdean, so central families barely overflowed to a school now a few minutes away. Both now follow the move: competition is measured from where the school stands, and each neighbourhood's second preferences are shifted by how much the move changes its pull towards the school. Both raised the Elm Grove figures a little.
+:::
 
 ## Designing catchments rather than guessing them {#sec-design-open}
 
@@ -1968,17 +2083,35 @@ These figures use ONS small-area population by single year of age instead, which
 
 # The Whitehawk question {#sec-whitehawk-open}
 
-::: callout-note
-## This section cannot be done on published data
+The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Dorothy Stringer and Varndean's, and moved part of Kemptown in. Whether that helped or harmed Longhill, and whom it helped, is one of the most contested questions in the consultation. An earlier version of this section said it could not be answered from published data. The full model can now say a good deal about it, from the council's catchment preference table and its Year 7 offers --- though not from any family's own choices.
 
-The 2024 redraw moved the Whitehawk area out of Longhill's catchment and into Dorothy Stringer and Varndean's, and moved part of Kemptown in. Whether that helped or harmed Longhill, and whom it helped, is one of the most contested questions in the consultation — and it turns entirely on how families in those specific neighbourhoods behaved.
+```{r wh-open}
+#| include: false
+whx <- sr$whitehawk
+wh_meas <- whx$measures %>% filter(year == 2026)
+```
 
-Published data can show the redraw's *geography* (@sec-redraw) and its effect on catchment populations. It cannot show what it did to choices, because that needs preferences from particular origins.
+**Who lives there.** About `r fmt(whx$area$children)` children a year live in the `r whx$area$n_zones` small areas the redraw moved, and `r sprintf("%.0f%%", 100 * whx$area$disadvantaged_share)` of them are disadvantaged, against `r sprintf("%.0f%%", 100 * whx$area$city_share)` across the city.
 
-There is reason to think the answer cuts against both sides of the argument. It is quite possible that **Kemptown, the area moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it** — in which case being placed in a catchment does not, by itself, make families choose a school. That would be consistent with the expectation about catchment priority above, and unhelpful to anyone arguing the redraw alone will fix or has broken Longhill's recruitment.
+**Returning them to Longhill's catchment, with the school at Ovingdean**, gives Longhill `r fmt(sco("whitehawk", "lh_intake") - sco("today", "lh_intake"))` more children a year by 2030 and lowers displacement. It does little for Whitehawk's journeys: its disadvantaged children travel `r sprintf("%.0f", swh("whitehawk", "minutes_disadvantaged"))` minutes on average, against `r sprintf("%.0f", swh("today", "minutes_disadvantaged"))` today, because Ovingdean is no nearer to them than Varndean is.
 
-This is precisely the kind of question where the absence of evidence lets the loudest argument win. It is answerable in an afternoon with the records.
-:::
+**Its effect on segregation is too small to call, and it has changed direction with the measure.**
+
+```{r wh-open-measures}
+wh_meas %>%
+  select(measure, map, gorard) %>%
+  pivot_wider(names_from = map, values_from = gorard) %>%
+  transmute(`How disadvantaged pupils are counted` = measure,
+            `Index today` = sprintf("%.3f", today),
+            `Whitehawk back to Longhill` = sprintf("%.3f", whitehawk)) %>%
+  tbl(caption = "Gorard's segregation index across the city's modelled intakes, 2026, council priorities, today and with Whitehawk returned to Longhill's catchment, on four ways of counting disadvantaged pupils. The last is the full model's measure.")
+```
+
+Scored by the neighbourhoods children come from, the redraw lowered segregation. Fitted to the Department for Education's whole-school shares on today's map, it raised it clearly --- but those shares describe cohorts admitted before the 2024 map and the new priorities, so the fit absorbed the policy change itself. Fitted on the map those cohorts were admitted under, it barely moved. Fitted to the first Year 7 offers under today's rules, it rises a little, and how much depends on how strongly Longhill is fitted to draw disadvantaged children --- almost half of its 2026 offers went to children eligible for free school meals. The case for or against the redraw rests on Longhill's roll and on journeys, not on segregation.
+
+**A move settles the question differently.** A catchment map drawn round Longhill at the top of Elm Grove puts `r sr$options$elm_moves$whitehawk_to_longhill` of the `r sr$options$elm_moves$whitehawk_zones` Whitehawk neighbourhoods back in Longhill's catchment, as part of a redesign rather than a reversal, and Whitehawk's disadvantaged children's journeys fall to `r sprintf("%.0f", swh("elm", "minutes_disadvantaged"))` minutes (@sec-options-m5).
+
+**What the records would still add** is whether being moved out of a catchment changed what Whitehawk families named. It is quite possible that Kemptown, moved *into* Longhill's catchment, was already choosing Longhill at a higher first-preference rate than Whitehawk was while Whitehawk sat inside it --- in which case being placed in a catchment does not, by itself, make families choose a school. First preferences by small area across the boundary change would settle it in an afternoon.
 
 # Deprivation and the catchment system {#sec-deprivation}
 
@@ -2156,7 +2289,7 @@ Everything above describes each catchment's **resident** children. What matters 
 
 There are reasons to think it would not be. Choosing a school other than the local one requires knowing the alternatives, being able to travel, and being confident enough in the process to rank preferences strategically. If those capabilities are unevenly distributed — and the wider literature on school choice is consistent that they are — then the families who leave a catchment will not be a random sample of it. An undersubscribed school would then admit an intake more deprived than the neighbourhood it sits in, not because anyone excluded anyone, but because the families best placed to leave, left.
 
-**Nothing in this report can confirm that for Brighton.** It is a hypothesis consistent with the mechanism, not a measurement. But it is testable from records the council holds, and if it holds it reframes the policy question completely.
+**Published data now points that way at one school.** The council's 2026 allocation factsheet shows `r sprintf("%.0f%%", 100 * sr$dis$fit$year7_fsm[sr$dis$fit$name == LH])` of Longhill's Year 7 offers going to children eligible for free school meals (@sec-fsm-2027), where `r round(dep$profile$pct_deprived[dep$profile$regime == "optionZ" & dep$profile$catchment == "Longhill"])`% of its catchment's children live in the most deprived 30% of neighbourhoods. The two are different measures, so the comparison is indicative rather than exact, and it is one year at one school; the full test still needs records. But it runs the way the mechanism predicts, and if it holds it reframes the policy question completely.
 
 ::: callout-important
 ## A viable eastern school and a concentration of disadvantage may be the same policy
@@ -2173,7 +2306,7 @@ The reverse holds too. Open allocation, the FSM out-of-catchment criterion, and 
 
 That is not an argument against either goal. It is an argument for stating which one is being pursued, and for being honest that pursuing it costs something measurable on the other. Consultations that present a redraw as good for disadvantaged children *and* good for Longhill are describing a trade-off as though it were a win.
 
-**What the records would add is the size of the trade-off**, which is currently unknown and is the number a decision actually needs. It is entirely possible the effect is small enough to ignore. It is equally possible it is large. Published statistics cannot distinguish those cases, and the council is deciding as though the question does not arise.
+**The full model now puts a size on it.** Counting disadvantaged pupils on a measure fitted to the council's Year 7 free school meal offers, a smaller Longhill at the top of Elm Grove with a catchment drawn round it raises the segregation index across the city's intakes from `r sprintf("%.3f", sco("today", "gorard"))` to `r sprintf("%.3f", sco("elm", "gorard"))`, and closes the gap between disadvantaged children's journeys and everyone else's, from `r sprintf("%.1f", sco("today", "dep_gap"))` minutes to `r sprintf("%.1f", max(0, sco("elm", "dep_gap")))`. The policy that does most for access in the east does most to concentrate disadvantage. What the records would add is whether the fitted measure holds for the families a move would bring.
 :::
 
 ### The "City Child", and why the city did not accept it {#sec-city-child}
@@ -2396,50 +2529,53 @@ Every scenario so far treats Longhill as the only school whose size is in questi
 
 This is testable with published data alone: admission numbers are public, and the model already redistributes displaced demand. The scenarios below use the adjudicator's binding 2026/27 numbers, which matters, because the council's proposed reductions at Blatchington Mill and Dorothy Stringer were overturned — 60 central places the council meant to remove stay in the system.
 
-```{r pan-open}
-po <- readRDS(file.path(PUBLIC_OUT, "pan_scenarios_open.rds"))
+::: callout-important
+## Rebuilt on the full model, and the earlier table withdrawn
 
-po$longhill %>%
-  mutate(natural = round(natural)) %>%
-  pivot_wider(names_from = entry_year, values_from = natural) %>%
-  rename(Scenario = scenario) %>%
-  tbl(caption = "Longhill's natural recruitment if other schools reduce their admission numbers")
-```
+An earlier version of this section answered the question on the swept model, and its table was easy to misread and wrong in two ways. It reported Longhill's **natural recruitment** --- what it would draw with its own admission number removed --- which on that model sat far above anything the school takes, so a row reading "Cardinal Newman 300" beside a figure in the two hundreds invited exactly the wrong reading. And that model let every family in the city choose a faith school while leaving Cardinal Newman short of its places, so cutting Cardinal Newman changed nothing at all.
 
-::: callout-warning
-## The open model cannot answer this one, and it is worth saying why
-
-Reducing Cardinal Newman changes Longhill's recruitment by **nothing at all** in this model — not a small amount, exactly zero. That is not a finding about Brighton. It is a failure of the open model, and the diagnosis is visible in the capacity table.
-
-**The failure is specific to the faith schools, and the rest of the section should be sound.** The Dorothy Stringer rows come out at +18 children at PAN 270 and +9 at 300, and there is no structural reason to doubt them: Stringer is a community school with no restricted choice set, so displaced demand is modelled the way the rest of the system is.
-
-**The Dorothy Stringer cascade reproduces almost exactly** — 18 against 20 at 270, 9 against 10 at 300. That is a genuine open-data result and it can be relied on.
-
-**The Cardinal Newman rows are the ones to distrust**, and the reason is the one given above: this model lets any family choose a faith school, so cutting Newman's places displaces children who scatter across the city rather than the subset who would actually have gone there. A model that restricted the faith choice set to families who could realistically gain admission would send those displaced children somewhere much more concentrated, and Longhill — nearest to a large share of Newman's catchment draw — is where a good many of them would land.
-
-How much is unknowable from published data, but the direction is not, and the stakes are worth stating. If cutting Newman were worth even twenty or thirty children to Longhill, then the combined packages in rows E and F would be worth something in the region of fifty to seventy — against Longhill's 2026 intake of roughly 130, an increase of a third to a half. **On that reading the size of other schools would be a more powerful instrument for Longhill than anything done to Longhill itself**, and more powerful than relocation and redrawing combined. This model puts row F at +28 and cannot tell you whether that is right.
-
-**Rows C and G can be read from this document. Rows A, B, E and F cannot.**
-
-**Recommendation: the faith-school choice set should be fitted from the records before the cascade is dismissed as an option.** This is the sharpest case in the report of published data producing a wrong answer rather than an imprecise one — a mechanism that may be the most powerful lever available to Longhill is reported here as exactly zero. If the council is weighing admission-number reductions across the city, it needs to know whether reducing Cardinal Newman helps Longhill by thirty children or by none, and the difference between those is a restricted choice set that individual preference records would supply directly.
-
-```{r pan-open-slack}
-po$slack %>%
-  transmute(School = name, PAN = pan, Intake = round(intake),
-            `Spare places` = round(spare)) %>%
-  arrange(desc(`Spare places`)) %>%
-  head(4) %>%
-  tbl(caption = "Where the open model leaves capacity unused, 2026")
-```
-
-The open model has Cardinal Newman recruiting only `r round(po$slack$intake[po$slack$name == "Cardinal Newman Catholic School"])` of its `r po$slack$pan[po$slack$name == "Cardinal Newman Catholic School"]` places. Reducing its admission number to 270 therefore binds on nothing, because the school never reaches 270 in the first place.
-
-In reality Cardinal Newman fills every year and is the most oversubscribed school in the city. The open model under-predicts it because the only public signal of a faith school's popularity is its first-preference count, and that badly understates demand for a school which families know admits on religious criteria — many who would want a place never express the preference. The same weakness that makes @sec-choice cautious about attractiveness proxies bites hardest here.
-
-**So this question needs the restricted data.** Individual preference records show Cardinal Newman as by far the most attractive school in Brighton, full at 360, and a reduction to 270 displacing children who cascade towards the two schools with room. This bundle cannot reproduce that, and rather than present a table of zeroes as though it were a result, the honest statement is that the open model is blind to it.
-
-It is the clearest single example in this document of what an origin–destination matrix of preferences would add.
+Both problems are gone here. These runs use the full model as the simulator runs it: catchment terms and attractiveness fitted to what each catchment's children ask for, with Cardinal Newman full; the council's 2026/27 priorities; children refused at a full school re-offered by second preference; and the East Sussex schools as destinations. **Longhill keeps its admission number of 210, so every figure is the children it would take.**
 :::
+
+```{r pan-open}
+sr$pan_scenarios %>%
+  mutate(longhill = round(longhill)) %>%
+  select(scenario, entry_year, longhill) %>%
+  pivot_wider(names_from = entry_year, values_from = longhill) %>%
+  rename(Scenario = scenario) %>%
+  tbl(caption = "Longhill's intake, at its admission number of 210, when other schools reduce theirs. Full model with the council's 2026/27 priorities; each school keeps the number the adjudicator determined unless the row says otherwise.")
+```
+
+```{r pan-open-stats}
+#| include: false
+sp_gain <- function(sc, y) round(spn(sc, "longhill", y) - spn("As determined", "longhill", y))
+pm <- sr$pan_moves
+to_lh <- function(sc) {
+  x <- pm[pm$scenario == sc, ]
+  freed <- -sum(x$change[x$change < 0])
+  if (freed <= 0) return(NA_real_)
+  100 * sum(x$change[x$name == LH]) / freed
+}
+```
+
+**Cardinal Newman and King's taking fewer is the reduction that reaches Longhill, and it lasts.** Cardinal Newman at 270 and King's at 150 add `r sp_gain("Cardinal Newman 270, King's 150", 2026)` children to Longhill in 2026, `r sp_gain("Cardinal Newman 270, King's 150", 2030)` in 2030 and `r sp_gain("Cardinal Newman 270, King's 150", 2035)` in 2035. Cardinal Newman at 300 on its own adds `r sp_gain("Cardinal Newman 300", 2026)` in 2026.
+
+**The central schools' reductions work only while those schools are full.** Stringer at 300, Varndean at 270 and Blatchington Mill at 300 add `r sp_gain("Stringer 300, Varndean 270, Blatchington Mill 300", 2026)` in 2026 and `r sp_gain("Stringer 300, Varndean 270, Blatchington Mill 300", 2030)` by 2030, because by then the falling cohort has left those schools with room of their own. Dorothy Stringer at 270 alone adds `r sp_gain("Dorothy Stringer 270", 2026)` in 2026.
+
+**Brighton Aldridge's reduction does nothing for Longhill**: `r sp_gain("Brighton Aldridge 150", 2026)` in 2026. It does not fill, so a lower number only removes its own empty places.
+
+**Longhill gets a minority of the children any reduction frees.** Of the places Cardinal Newman at 270 and King's at 150 take out of the system in 2026, `r sprintf("%.0f%%", to_lh("Cardinal Newman 270, King's 150"))` end up at Longhill; the rest go to the schools families rank next, most of them nearer home.
+
+```{r pan-open-moves}
+pm %>%
+  filter(scenario %in% c("Cardinal Newman 270, King's 150", "Stringer 300, Varndean 270, Blatchington Mill 300")) %>%
+  transmute(Scenario = scenario, School = short, `Change in intake, 2026` = sprintf("%+.0f", change)) %>%
+  tbl(caption = "Where the children two of the reductions free actually go, 2026")
+```
+
+For comparison with the withdrawn table: with its own admission number removed as well, Longhill would draw `r round(spn("As determined", "longhill_natural"))` children in 2026 on the full model with nothing else changed, against `r round(spn("As determined"))` at 210 --- it is not short of places, it is short of families.
+
+The academies and faith schools are modelled as responding to demand. The council cannot set their numbers; it can ask, and the table above is the evidence for asking. The strategic view weighs these reductions against the council's other priorities, including the finances of the community schools, which Cardinal Newman and King's taking fewer improves more than any other single change the council does not control.
 
 # How much does any of this depend on unknowns? {#sec-envelope}
 
@@ -2487,7 +2623,7 @@ That is a specific and modest ask of the council. What would most improve this a
 
 This is the most important thing to know about every range quoted in this document.
 
-At the current site in 2035, the sweep spans **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` to `r round(max(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` children, with a median of `r round(median(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`.** The calibrated model puts it at about **79** — essentially the floor of the range, not the middle.
+At the current site in 2035, the sweep spans **`r round(min(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` to `r round(max(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))` children, with a median of `r round(median(env$envelope$natural_intake[env$envelope$site == "now" & env$envelope$entry_year == 2035]))`.** The full model puts it at about **`r m5n("A", 2035)`** — at the floor of the range, not the middle.
 
 The sweep is doing its job: it brackets the plausible answers, which is the point of sweeping rather than guessing. But a reader naturally treats the centre of a range as the best estimate, and there are two reasons to think that would be wrong here — in both cases towards the optimistic side.
 
@@ -2509,28 +2645,33 @@ I would carry out that work with the council, share the code and the outputs, an
 - Longhill has the lowest potential accessibility to the city's children of any secondary school in Brighton (@sec-brightopia), at `r round(bright$at_original_beta$access_index[bright$at_original_beta$name == LH])` against a city average of 100 — and it has the fewest competing schools nearby, so that is a reach problem rather than a crowding one.
 - The Elm Grove site is better placed at every distance decay tested. This is the one conclusion here that requires no view on attractiveness, admissions priority, or family behaviour.
 
-**What holds across the whole envelope**
+**What the full model shows**
 
-- Longhill cannot sustain the PAN of 210 now in force into the 2030s: it reaches 90% of that number in only `r round(env$q1[["PAN 210"]][env$q1$entry_year == 2035])`% of runs by 2035, and that is on a model already biased in its favour. At the 240 it carried until 2026, `r round(env$q1[["PAN 240"]][env$q1$entry_year == 2035])`%.
-- A PAN of 120–150 is defensible.
+- Longhill takes about `r fmt(sco("today", "lh_intake", 2026))` children in 2026 and `r fmt(sco("today", "lh_intake"))` in 2030 where it is, on an admission number of 210, and no configuration draws 150 after 2026. Cutting its number removes empty places and adds no children (@sec-fill-m5).
+- A move on its own does not help Longhill; a move with a catchment map drawn round the new site does, to about `r fmt(sco("elm", "lh_intake"))` in 2030, and it closes the gap between disadvantaged children's journeys and everyone else's while concentrating disadvantage in one school (@sec-options-m5).
+- Cardinal Newman and King's taking fewer adds children to Longhill that last; trimming the full central schools helps only while they are full; Brighton Aldridge taking fewer does nothing for it (@sec-pan-open).
+- Returning Whitehawk to Longhill's catchment adds children and lowers displacement, and its effect on how mixed intakes are is too small to call (@sec-whitehawk-open).
+- No option makes Longhill break even.
+
+**What holds across the whole swept model**
+
+- Longhill cannot sustain the PAN of 210 now in force into the 2030s: it reaches 90% of that number in only `r round(env$q1[["PAN 210"]][env$q1$entry_year == 2035])`% of runs by 2035, and that is on a model biased in its favour. At the 240 it carried until 2026, `r round(env$q1[["PAN 240"]][env$q1$entry_year == 2035])`%.
 - The 2028 boundary change does not alter this. It adds one school and its own children, and those children live closer to that school than to Longhill.
-- The 2024 catchment redraw does not alter it either, in the direction the open model can see (@sec-redraw). Whether it makes Longhill's position slightly better or slightly worse is beyond what published data can settle.
 - Demand tracks published Attainment 8, not value-added.
-- On the swept model, relocating to Elm Grove increases recruitment, in `r round(100 * mean(env$q3$gain[env$q3$entry_year == 2035] > 0))`% of runs by
-  2035. With catchment terms fitted to preferences a move on its own does the opposite (@sec-relocation-m5), so this is listed here for what the envelope says, not as a conclusion that holds.
 
 **What this analysis cannot settle**
 
-- *Whether* relocation would help Longhill's roll at all. The swept model says it would. Fitted catchment terms say a move on its own would cost the school about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2030]))` children a year and a move with redrawn catchments would gain about `r round(rl5$move_effect$move_and_redraw[rl5$move_effect$entry_year == 2030])` (@sec-relocation-m5). What decides it is how strongly families would follow a redrawn boundary, which no data here can show.
+- How closely families would follow a redrawn catchment. Every redraw and relocation result assumes they follow a new map as closely as the one they have, and the answer turns on it: with the catchment terms halved, a move on its own would help (`r m5s("C", 2030, "Catchment terms halved")` children at Elm Grove against `r m5s("A", 2030, "Catchment terms halved")` at Ovingdean in 2030).
+- How sharply distance deters families, which the full model sets rather than fits because a catchment-level table cannot identify it.
 - What happens to children academically. This models where they would go, not what happens when they get there — for which see [school_attainment_tool](https://github.com/adamdennett/school_attainment_tool), which finds absence a far more powerful lever than any redistribution of intake.
 - Anything below catchment level about who goes where.
 
 **Standing limits**
 
-- Travel times are now routed throughout, including the expansion area and the Elm Grove site. The `r5r` network was rebuilt over a merged East and West Sussex extract; no journey time in this document is inferred from straight-line distance.
-- The model over-predicts Longhill by `r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])` children against published offers, so its figures are generous to the school and its relocation gain is an upper bound.
+- Travel times are routed throughout, including the expansion area and the Elm Grove site. The `r5r` network was rebuilt over a merged East and West Sussex extract; no journey time to a city school is inferred from straight-line distance. Journeys to the East Sussex schools use straight-line distance, because the bus network has no direct eastern route to Lewes.
+- The swept model over-predicts Longhill by `r round(os$val$modelled[os$val$name == LH] - os$val$observed[os$val$name == LH])` children against published offers; the full model largely closes that gap.
 - Ten destinations means anything about *why* a school is attractive rests on ten observations.
-- Only the schools inside the authority are modelled as destinations. Routed times to Seahaven, Priory Lewes and Seaford Head now exist but are not yet used, so eastern children have nowhere to go in the model except Brighton or Peacehaven — which overstates the inflow to the city.
+- The academies and faith schools are modelled as responding to demand, not as setting their own numbers.
 
 # What the council's own data would settle {#sec-council-data}
 
@@ -2538,7 +2679,7 @@ This document is built entirely from published sources, and that constraint has 
 
 The council holds individual preference and offer records: for each applicant, the schools named in order, the criterion under which a place was allocated, and the home postcode. Nothing below needs anything the admissions process does not already generate.
 
-**Where the open model is demonstrably wrong, and would stop being.** The validation in @sec-envelope shows this model over-predicting Longhill by a wide margin once routed journey times are used. The reason is structural: the model can see how reachable a school is, but nothing in published data records how strongly families *avoid* one. Preference records supply exactly that, as a school-level term fitted rather than assumed. Until then every relocation figure here is an upper bound, and the report says so repeatedly because it is the single largest source of error in it.
+**Where the swept model is demonstrably wrong, and would stop being.** The validation shows the swept model over-predicting Longhill by a wide margin once routed journey times are used; the full model, fitted to the council's catchment preference table, closes most of that gap, and individual records would close the rest. The reason is structural: the model can see how reachable a school is, but nothing in published data records how strongly families *avoid* one. Preference records supply exactly that, as a school-level term fitted rather than assumed. Until then every relocation figure here is an upper bound, and the report says so repeatedly because it is the single largest source of error in it.
 
 **Whether catchment priority is worth anything.** This document has to assume a value for how much being in catchment shifts a family's choice, and sweeps it across a wide band because the assumption cannot be tested openly. Records settle it directly, by school: compare offer rates for in-catchment and out-of-catchment applicants who named the same school. The expected answer at Longhill is **close to nothing**, since an undersubscribed school turns almost nobody away whether they live in catchment or out. If that is borne out, redrawing Longhill's catchment cannot work through priority at all — only through what families are willing to name. That is a conclusion with direct policy consequences and it is invisible in published data.
 
@@ -2648,17 +2789,10 @@ I would rather this analysis were made redundant by better published data than b
 
 These follow from published data. The council holds the records that would confirm or refute them.
 
-::: callout-caution
-## Prediction 1 is the one most likely to be too high
-
-Prediction 1 quotes a range centred on the median of the sweep. For the reasons set out in @sec-envelope, there is good reason to think the true figure sits at or below the **bottom** of that range rather than in the middle of it — which would put Longhill's 2035 recruitment closer to 80 children than to 150.
-
-The prediction is left as published data states it, because that is what this document is for and a reader should be able to see exactly where the open sources lead. But it is the clearest single case in the report of a figure the records would move, and the direction is downward.
-:::
-
-1.  Longhill's natural recruitment in 2035 sits between `r round(env$q2$min[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` and `r round(env$q2$max[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` children under current catchments, centred near a median of `r round(env$q2$median[env$q2$entry_year == 2035 & env$q2$site_label == "Ovingdean"])` children.
-2.  Relocating to Elm Grove without redrawing catchments does **not** increase Longhill's intake. On the swept model it rises, by a median of `r round(median(env$q3$gain[env$q3$entry_year == 2035]))` children a year by 2035; with catchment terms fitted to the council's catchment preference table it falls, by about `r abs(round(rl5$move_effect$move_only[rl5$move_effect$entry_year == 2035]))` (@sec-relocation-m5). The second is the better evidenced, and it is the prediction made here.
-3.  The four wards joining in 2028 contribute fewer than 10 additional children a year to Longhill, under arrangements retaining a catchment priority at Peacehaven Community School.
+1.  At its current site and catchments, Longhill's Year 7 intake is about `r fmt(sco("today", "lh_intake"))` in 2030, and cutting its admission number to 150 does not change it.
+2.  Relocating Longhill to Elm Grove without redrawing catchments does **not** increase its intake: the full model puts its natural recruitment at `r m5n("C", 2030)` against `r m5n("A", 2030)` in 2030. Relocating with a catchment map drawn round the site does, to about `r m5n("E", 2030)`.
+3.  Cardinal Newman reducing to 270 and King's to 150 would raise Longhill's intake by about `r fmt(sco("cn270_kings", "lh_intake") - sco("today", "lh_intake"))` children in 2030; reducing Brighton Aldridge's admission number would not raise it at all.
+4.  The four wards joining in 2028 contribute fewer than 10 additional children a year to Longhill, under arrangements retaining a catchment priority at Peacehaven Community School.
 
 If any is wrong, the data to show it exists. We would welcome the correction.
 
@@ -2673,6 +2807,10 @@ If any is wrong, the data to show it exists. We would welcome the correction.
 | Population | ONS small area population estimates, mid-2022 |
 | Offers outside the city, by catchment | Office of the Schools Adjudicator, determination of 20 October 2025, Table 11 |
 | Offers by catchment and destination school, 2024 | Brighton & Hove City Council, FOI response [published on WhatDoTheyKnow](https://www.whatdotheyknow.com/request/schools_admissions_breakdowns_fo) |
+| Year 7 offers by priority, free school meal and priority-6 places | Brighton & Hove City Council, Year 7 allocation factsheets, September 2025 and September 2026 |
+| Disadvantaged pupils by school | DfE performance tables, PTFSM6CLA1A |
+| Catchment-level preferences and allocations | Brighton & Hove City Council, evidence to the Schools Adjudicator, item 8.1 (received as a party to the case) |
+| Scenario runs on the full model | The policy simulator, [bh-school-system](https://github.com/adamdennett/bh-school-system), built from this bundle and the sources above |
 | Boundaries | ONS Open Geography Portal; council catchment map |
 | Reorganisation | [MHCLG decision letters](https://www.gov.uk/government/publications/local-government-reorganisation-decision-letters-to-council-leaders), 16 July 2026 |
 
